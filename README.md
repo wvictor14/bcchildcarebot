@@ -25,6 +25,7 @@ For detail on the original Twitter bot see:
 
 ### twitter version of londonbot
 
+View this version of [twitter-londmapbot](https://github.com/matt-dray/londonmapbot/tree/65aa64722c475fc9bda274c49674cd66ff695b4b)
 You can make your own Twitter bot. See the links above for details, or this excellent introduction by Oscar Baruffa, but in brief:
 
 1. Create a Twitter account for your bot
