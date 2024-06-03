@@ -2,7 +2,7 @@ name: bcchildcarevacancybot
 
 on:
   schedule:
-    - cron: '14 9/8 * * *'  # trigger at 09:14 and 17:14 every day
+    - cron: '35 * * * * *'  # trigger every hour at 40 min
 
 jobs:
   post-image:
@@ -19,4 +19,4 @@ jobs:
       - name: Install packages
         run: Rscript -e 'install.packages(c("rtoot", "rtweet", "purrr"), dependencies = TRUE)'
       - name: Create and post image
-        run: Rscript post-image.R
+        run: Rscript tweet-toot.R
