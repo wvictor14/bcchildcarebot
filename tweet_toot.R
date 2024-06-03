@@ -14,7 +14,15 @@ twitter_token <- rtweet::rtweet_bot(
   access_secret = Sys.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 )
 
-# generate tweet
+mastodon_token <- structure(
+  list(
+    bearer = Sys.getenv("RTOOT_DEFAULT_TOKEN"),
+    type = "user",
+    instance = "botsin.space"
+  ),
+  class = "rtoot_bearer"
+) 
+
 
 ## identify vacancies
 ## craft tweet message
@@ -25,4 +33,10 @@ possibly_post_tweet <- purrr::possibly(rtweet::post_tweet)  # will fail silently
 possibly_post_tweet(
   text           = tweet_message,
   token          = twitter_token
+)
+
+
+rtoot::post_toot(
+  alt_text = tweet_message,
+  token    = mastodon_token
 )
