@@ -2,7 +2,7 @@ name: bcchildcarevacancybot
 
 on:
   schedule:
-    - cron: '52 * * * *'  # trigger every hour at 40 min
+    - cron: '14 9/10 * * *'  # trigger at 09:14 and 19:14 every day
 
 jobs:
   post-image:
