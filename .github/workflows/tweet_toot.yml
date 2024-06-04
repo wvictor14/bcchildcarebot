@@ -2,11 +2,11 @@ name: bcchildcarevacancybot
 
 on:
   schedule:
-    - cron: '14 9/10 * * *'  # trigger at 09:14 and 19:14 every day
+    - cron: '28 5,16 * * *'  # trigger at 5am and 4pm every day
 
 jobs:
   post-image:
-    runs-on: ubuntu
+    runs-on: ubuntu:latest
     env:
       RTOOT_DEFAULT_TOKEN: ${{ secrets.RTOOT_DEFAULT_TOKEN}}
       TWITTER_CONSUMER_API_KEY: ${{ secrets.TWITTER_CONSUMER_API_KEY }}
