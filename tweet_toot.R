@@ -35,8 +35,10 @@ possibly_post_tweet(
   token          = twitter_token
 )
 
+message('sending the message:')
+message(tweet_message)
 
 rtoot::post_toot(
-  alt_text = tweet_message,
+  status = tweet_message,
   token    = mastodon_token
 )
