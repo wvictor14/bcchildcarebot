@@ -2,8 +2,6 @@
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 
-[![](https://img.shields.io/badge/@londonmapbot-white?style=flat&labelColor=blue&logo=Twitter&logoColor=white)](https://twitter.com/londonmapbot)
-
 ## What
 
 Source for the BC child care vacancy bot [placeholder for bot link]() built by [Victor Yuan](https://victoryuan.com). The repo contains a [GitHub Action](https://github.com/features/actions) that executes R code on every day to:
