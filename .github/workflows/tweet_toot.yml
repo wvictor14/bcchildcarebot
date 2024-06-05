@@ -18,10 +18,15 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
-      - name: Install system dependencies
-        run: sudo apt install -y libcurl4-openssl-dev
       - uses: r-lib/actions/setup-r@v2
-      - name: Install R packages
-        run: Rscript -e 'install.packages(c("rtoot", "rtweet", "purrr", "readr", "lubridate", "glue", "tidyr"), dependencies = TRUE)'
-      - name: Create and tweet
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            rtoot
+            rtweet
+            purrr
+            readr
+            lubridate
+            glue
+      - name: Create message and tweet toot
         run: Rscript tweet_toot.R
