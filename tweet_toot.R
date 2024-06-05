@@ -5,6 +5,7 @@ library(purrr)
 library(dplyr)
 library(readr)
 library(lubridate)
+library(tidyr)
 
 # Set tokens for interacting with APIs (stored as GitHub secrets)
 twitter_token <- rtweet::rtweet_bot(
