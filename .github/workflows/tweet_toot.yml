@@ -28,5 +28,7 @@ jobs:
             readr
             lubridate
             glue
+            tidyr
+            dplyr
       - name: Create message and tweet toot
         run: Rscript tweet_toot.R
