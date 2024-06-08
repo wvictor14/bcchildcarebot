@@ -23,12 +23,12 @@ jobs:
         with:
           packages: |
             rtoot
-            rtweet
             purrr
             readr
             lubridate
             glue
             tidyr
             dplyr
+            forcats
       - name: Create message and tweet toot
         run: Rscript tweet_toot.R
