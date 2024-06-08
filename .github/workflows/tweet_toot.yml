@@ -2,7 +2,7 @@ name: bcchildcarevacancybot
 
 on:
   push:
-    branches: ['main']
+    branches: ['test'] # push to this branch to test toots
   schedule:
     - cron: '11 3 * * *'  # trigger at 5am and 4pm every day
 

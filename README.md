@@ -14,7 +14,11 @@ Source for the BC child care vacancy bot [placeholder for bot link]() built by [
 
 This bot is built following [Matt Dray's](https://www.matt-dray.com) [@londonmapbot](https://www.botsin.space/londonmapbot).
 
-## How
+## How to follow
+
+For Mastodon, create an account on a Instance of your choosing (not botsin.space, which is only for bot accounts). Then follow [![](https://img.shields.io/badge/@bcchildcarebot@botsin.space-white?style=flat&labelColor=purple&logo=Mastodon&logoColor=white)](https://botsin.space/@bcchildcarebot) and turn on notifications.
+
+## How it works
 
 ### mastodon 
 
