@@ -6,6 +6,7 @@ library(readr)
 library(lubridate)
 library(tidyr)
 library(glue)
+library(forcats)
 
 # parameters
 max_nchar_per_toot <- 500-10 # 10 char buffer
