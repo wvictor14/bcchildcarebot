@@ -6,6 +6,7 @@ library(dplyr)
 library(readr)
 library(lubridate)
 library(tidyr)
+library(glue)
 
 # Set tokens for interacting with APIs (stored as GitHub secrets)
 twitter_token <- rtweet::rtweet_bot(
@@ -39,8 +40,18 @@ labels <- c('<36mo' = "VACANCY_SRVC_UNDER36",
   "Licensed Preschool" = "VACANCY_SRVC_LICPRE",
   "Grade1-Age12" = "VACANCY_SRVC_OOS_GR1_AGE12"
 )
+
+# vacancies for the last 7 days
+bccc |> 
+  filter(
+    VACANCY_LAST_UPDATE >= .today - 7,
+    VACANCY_SRVC_UNDER36 == 'Y'
+  ) |> 
+  count(VACANCY_LAST_UPDATE)
+
 .text <- bccc |>
   #slice(1:10) |> 
+  filter(
   filter(VACANCY_LAST_UPDATE == .today) |> 
   select(NAME, CITY, PHONE, contains('VACANCY')) |> 
   pivot_longer(
@@ -48,18 +59,20 @@ labels <- c('<36mo' = "VACANCY_SRVC_UNDER36",
     names_to = 'type',
     names_prefix = 'VACANCY_SRVC_',
     values_to = 'yesno'
+    VACANCY_SRVC_UNDER36 == 'Y'
   ) |> 
-  filter(yesno == 'Y') |> 
-  group_by(NAME, CITY) |> 
-  summarize(.type = paste0(unique(type), collapse = ', ')) |> 
-  mutate(text = glue::glue("{NAME}, {CITY}\n\t\t{.type}"))  |>  
-  pull(text)  |> 
-  paste0(collapse = '\n') 
+  select(NAME, CITY, PHONE) |> 
+  mutate(text = glue::glue("{NAME},{CITY},{PHONE}")) |> 
+  pull(text) |> 
+  paste0(collapse = '\n')
  
 if (nchar(.text) == 0) {
   .text <- 'No new vacancies today.'
 }
 
+if (nchar(.text) >= 500) {
+  warning(glue::glue("toot is >= 500 characters: {nchar(.text)}"))
+}
 # Post tweet to Twitter
 possibly_post_tweet <- purrr::possibly(rtweet::post_tweet)  # will fail silently
 
