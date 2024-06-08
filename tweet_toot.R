@@ -52,13 +52,7 @@ bccc |>
 .text <- bccc |>
   #slice(1:10) |> 
   filter(
-  filter(VACANCY_LAST_UPDATE == .today) |> 
-  select(NAME, CITY, PHONE, contains('VACANCY')) |> 
-  pivot_longer(
-    contains('VACANCY_SRVC'),
-    names_to = 'type',
-    names_prefix = 'VACANCY_SRVC_',
-    values_to = 'yesno'
+    VACANCY_LAST_UPDATE >= .today - 1,
     VACANCY_SRVC_UNDER36 == 'Y'
   ) |> 
   select(NAME, CITY, PHONE) |> 
