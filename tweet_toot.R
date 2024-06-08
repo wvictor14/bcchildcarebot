@@ -8,6 +8,10 @@ library(lubridate)
 library(tidyr)
 library(glue)
 
+# parameters
+max_nchar_per_toot <- 500-10 # 10 char buffer
+max_toots <- 6
+
 # Set tokens for interacting with APIs (stored as GitHub secrets)
 twitter_token <- rtweet::rtweet_bot(
   api_key       = Sys.getenv("TWITTER_CONSUMER_API_KEY"),
@@ -52,33 +56,46 @@ bccc |>
 .text <- bccc |>
   #slice(1:10) |> 
   filter(
-    VACANCY_LAST_UPDATE >= .today - 1,
+    VACANCY_LAST_UPDATE >= .today -1,
     VACANCY_SRVC_UNDER36 == 'Y'
   ) |> 
   select(NAME, CITY, PHONE) |> 
-  mutate(text = glue::glue("{NAME},{CITY},{PHONE}")) |> 
-  pull(text) |> 
-  paste0(collapse = '\n')
+  mutate(
+    text = glue::glue("{NAME},{CITY},{PHONE}"),
+    n_char = nchar(text),
+    n_char_cumsum = cumsum(n_char),
+    n_char_cut = cut(
+      n_char_cumsum, 
+      breaks = seq(0, 500*max_toots, by = max_nchar_per_toot)) |> 
+      as.numeric()
+    
+    ) |> 
+  group_nest(n_char_cut) |> 
+  mutate(text = purrr::map_chr(
+    data, \(x) pull(x, text) |>  paste0(collapse = '\n')
+  ),
+      text = glue::glue("{n_char_cut}/{max(n_char_cut)}\n{text}")
+  ) |> 
+  pull(text)
  
-if (nchar(.text) == 0) {
+if (length(.text) == 0) {
   .text <- 'No new vacancies today.'
 }
 
-if (nchar(.text) >= 500) {
-  warning(glue::glue("toot is >= 500 characters: {nchar(.text)}"))
-}
 # Post tweet to Twitter
-possibly_post_tweet <- purrr::possibly(rtweet::post_tweet)  # will fail silently
+#possibly_post_tweet <- purrr::possibly(rtweet::post_tweet)  # will fail silently
+#possibly_post_tweet(
+#  text           = .text,
+#  token          = twitter_token
+#)
 
-possibly_post_tweet(
-  text           = .text,
-  token          = twitter_token
-)
+message(glue('Sending {length(.text)} toots:'))
+.text |>  purrr::walk(message)
 
-message('sending the message:')
-message(.text)
-
-rtoot::post_toot(
-  status = .text,
-  token    = mastodon_token
-)
+.text |> 
+  purrr::walk(
+    \(x) rtoot::post_toot(
+      status = x,
+      token = mastodon_token
+    )
+  )
