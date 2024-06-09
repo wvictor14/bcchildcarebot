@@ -6,6 +6,7 @@ library(readr)
 library(lubridate)
 library(tidyr)
 library(glue)
+library(forcats)
 
 # parameters
 max_nchar_per_toot <- 500-10 # 10 char buffer
@@ -34,6 +35,9 @@ url <- 'https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af52
 bccc <- readr::read_csv(url)
 
 # identify vacancies ----
+## set date --> data is in pst
+.today <- lubridate::today(tzone = 'Canada/Pacific')
+
 ## vacancies for the last 7 days
 bccc |> 
   filter(
@@ -44,7 +48,6 @@ bccc |>
 
 # craft message ----
 ## set dates, set timezone to pst, see OlsonNames()
-.today <- lubridate::today(tzone = 'Canada/Pacific')
 .text <- bccc |>
   
   # filter to yesterday, and group of interest
