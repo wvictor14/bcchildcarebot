@@ -4,7 +4,7 @@ on:
   push:
     branches: ['test'] # push to this branch to test toots
   schedule:
-    - cron: '11 15 * * *'  # trigger at 5am and 4pm every day
+    - cron: '41 15 * * *'  # trigger at 5am and 4pm every day
 
 jobs:
   tweet:
