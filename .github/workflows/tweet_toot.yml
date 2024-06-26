@@ -22,7 +22,6 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           packages: |
-            rtweet
             rtoot
             purrr
             readr
