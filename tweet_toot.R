@@ -7,20 +7,11 @@ library(lubridate)
 library(tidyr)
 library(glue)
 library(forcats)
-library(rtweet)
 
 # parameters
 max_nchar_per_toot <- 500-10 # 10 char buffer
 max_toots <- 6
 post_title <- 'New Vacancies:'
-
-# Set tokens for interacting with APIs (stored as GitHub secrets)
-twitter_token <- rtweet::rtweet_bot(
-  api_key       = Sys.getenv("TWITTER_CONSUMER_API_KEY"),
-  api_secret    = Sys.getenv("TWITTER_CONSUMER_API_SECRET"),
-  access_token  = Sys.getenv("TWITTER_ACCESS_TOKEN"),
-  access_secret = Sys.getenv("TWITTER_ACCESS_TOKEN_SECRET")
-)
 
 mastodon_token <- structure(
   list(
