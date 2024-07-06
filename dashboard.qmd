@@ -1,16 +1,21 @@
 ---
 title: "BC Child Care Vacancies"
+date: today
 format: 
   dashboard:
+    mainfont: Nunito, sans-serif
     orientation: rows
     scrolling: true
     embed-resources: true
     nav-buttons: 
       - icon: github
         href: https://github.com/wvictor14/bcchildcarebot
+      - icon: mastodon
+        href: https://botsin.space/@bcchildcarebot
 editor_options: 
   chunk_output_type: console
 ---
+
 
 ```{r}
 #| include: FALSE
@@ -30,6 +35,9 @@ bccc <- readr::read_csv(url)
 .today <- lubridate::today(tzone = 'Canada/Pacific')
 ```
 
+Last updated: `{r} .today`
+
+Every day, new vacancies across BC Child Care facilities will be listed here. 
 
 ```{css}
 #filterdiv {
