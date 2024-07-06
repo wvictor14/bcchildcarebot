@@ -80,17 +80,10 @@ font-size: 0.875rem;
 color: rgba(0, 0, 0, 0.6);
 }
 
-.detail-header {
+.detail-title {
 margin-bottom: 1rem;
 font-size: 1.25rem;
 font-weight: 600;
-}
-
-.detail-title {
-margin-left: 1rem;
-font-size: 0.875rem;
-font-weight: 400;
-color: rgba(0, 0, 0, 0.6);
 }
 
 .detail-description {
@@ -132,7 +125,7 @@ shared_dat <- SharedData$new(tbl_data, key = ~id)
 
 # columns to hide
 hide <- tbl_data |> 
-  select(contains('VACANCY')) |> 
+  select(contains('VACANCY'), id, `ADDRESS_2`, WEBSITE, EMAIL) |> 
   colnames() %>%
   setNames(., .) |> 
   map(
@@ -142,7 +135,7 @@ hide <- tbl_data |>
   )
 ```
 
-### Column {width=15%}
+### Column {width=20%}
 
 ```{r }
 htmltools::div(
