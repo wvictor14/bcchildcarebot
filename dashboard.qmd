@@ -34,6 +34,7 @@ bccc <- readr::read_csv(url)
 ```{css}
 #filterdiv {
 display:block;
+font-size: 0.9375rem;
 }
 .title {
 font-size: 1.5rem;
@@ -125,7 +126,11 @@ shared_dat <- SharedData$new(tbl_data, key = ~id)
 
 # columns to hide
 hide <- tbl_data |> 
-  select(contains('VACANCY'), id, `ADDRESS_2`, WEBSITE, EMAIL) |> 
+  select(
+    contains('VACANCY'),
+    SERVICE_TYPE_CD,
+    ADDRESS_1, PHONE,
+    id, `ADDRESS_2`, WEBSITE, EMAIL) |> 
   colnames() %>%
   setNames(., .) |> 
   map(
@@ -184,6 +189,9 @@ row_details <- function(index, bccc) {
     div(class = "detail-header", 
         span(class = "detail-title", bccc$NAME)),
     div(class = "detail-description", bccc$SERVICE_TYPE_CD),
+    df_field("Phone", bccc$PHONE),
+    df_field("Website", bccc$WEBSITE),
+    df_field("Email", bccc$EMAIL),
     df_field("Address", bccc$ADDRESS_1),
     df_field('Address 2', bccc$ADDRESS_2),
     df_field('City', bccc$CITY),
