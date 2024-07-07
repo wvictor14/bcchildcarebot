@@ -24,6 +24,7 @@ library(glue)
 library(reactable)
 library(htmltools)
 library(crosstalk)
+library(leaflet)
 ```
 
 ```{r}
@@ -117,6 +118,7 @@ tbl_data <- bccc |>
   select(
     SERVICE_TYPE_CD:CITY, 
     PHONE:EMAIL,
+    LONGITUDE, LATITUDE,
     #    contains('OP_'),
     #   contains('SRVC_'),
     #  contains('LANG_'),
@@ -136,6 +138,7 @@ shared_dat <- SharedData$new(tbl_data, key = ~id)
 hide <- tbl_data |> 
   select(
     contains('VACANCY'),
+    LONGITUDE, LATITUDE,
     SERVICE_TYPE_CD,
     ADDRESS_1, PHONE,
     id, `ADDRESS_2`, WEBSITE, EMAIL) |> 
@@ -203,6 +206,14 @@ row_details <- function(index, bccc) {
     df_field("Address", bccc$ADDRESS_1),
     df_field('Address 2', bccc$ADDRESS_2),
     df_field('City', bccc$CITY),
+    df_field(
+      'Map', 
+      bccc |> 
+        leaflet() |>
+        addProviderTiles(providers$Stadia) |>
+        #addProviderTiles(providers$CartoDB.Positron) |>
+        addCircleMarkers()
+    ),
     
     df_field(
       "Vacancy type",
@@ -235,4 +246,18 @@ reactable(
   columns = hide,
   details = function(index) row_details(index, tbl_data)
 )
+```
+
+```{r }
+#| eval: FALSE
+
+bccc |> 
+  slice(1) |> 
+  # map
+  leaflet() |>
+  
+  addProviderTiles(providers$Stadia) |>
+  #addProviderTiles(providers$CartoDB.Positron) |>
+  addCircleMarkers()
+
 ```
