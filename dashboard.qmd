@@ -210,7 +210,7 @@ row_details <- function(index, bccc) {
       'Map', 
       bccc |> 
         leaflet() |>
-        addProviderTiles(providers$Stadia) |>
+        addProviderTiles(providers$CartoDB.Voyager) |>
         #addProviderTiles(providers$CartoDB.Positron) |>
         addCircleMarkers()
     ),
@@ -248,15 +248,15 @@ reactable(
 )
 ```
 
-```{r }
+```{r dev}
 #| eval: FALSE
-
+#| include: FALSE
 bccc |> 
-  slice(1) |> 
+  slice(120) |> 
   # map
   leaflet() |>
   
-  addProviderTiles(providers$Stadia) |>
+    addProviderTiles(providers$CartoDB.Voyager) |>
   #addProviderTiles(providers$CartoDB.Positron) |>
   addCircleMarkers()
 
