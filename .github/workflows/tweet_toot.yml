@@ -1,10 +1,10 @@
-name: bcchildcarevacancybot
+name: tweet
 
 on:
   push:
     branches: ['test'] # push to this branch to test toots
   schedule:
-    - cron: '41 15 * * *'  # trigger at 5am and 4pm every day
+    - cron: '41 15 * * *'  # trigger at 3:41 pm UTC (8:41 AM PST)
 
 jobs:
   tweet:
