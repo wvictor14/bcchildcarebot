@@ -44,6 +44,10 @@ Every day, new vacancies across BC Child Care facilities will be listed here.
 #filterdiv {
 display:block;
 font-size: 0.9375rem;
+margin-bottom: 0px !important;
+}
+.crosstalk-input {
+    margin-bottom: 0px;
 }
 .title {
 font-size: 1.5rem;
@@ -99,7 +103,12 @@ font-weight: 600;
 .detail-description {
 font-size: 0.875rem;
 }
-
+#VACANCY_SRVC_UNDER36 
+#VACANCY_SRVC_30MOS_5YRS 
+#VACANCY_SRVC_LICPRE 
+#VACANCY_SRVC_OOS_GR1_AGE12{
+height:25px !important;
+}
 ```
 
 ## Row {height=30%}
@@ -110,8 +119,7 @@ tbl_data <- bccc |>
   
   # filter to yesterday, and group of interest
   filter(
-    VACANCY_LAST_UPDATE >= .today -1,
-    VACANCY_SRVC_UNDER36 == 'Y'
+    VACANCY_LAST_UPDATE >= .today -1
   )  |> 
   
   # filter columns
@@ -129,8 +137,12 @@ tbl_data <- bccc |>
   # crosstalk key
   mutate(id = row_number()) |> 
   
-  # clean
-  mutate(across(contains('VACANCY_SRVC_'), ~ifelse(.x == 'Y', 'Y', NA)))
+  # clean vacancy column
+  # if yes, replace with vacancy type, otherwise leave as NA
+  # NA will not show as a choice
+  pivot_longer(contains('VACANCY_SRVC_')) |> 
+  mutate(value = ifelse(value == 'Y', str_remove_all(name, 'VACANCY_SRVC_'), NA)) |>  
+  pivot_wider(names_from = name, values_from = value)
 
 shared_dat <- SharedData$new(tbl_data, key = ~id)
 
@@ -159,29 +171,29 @@ htmltools::div(
   filter_select("CITY", "CITY", shared_dat, ~CITY),
   filter_checkbox(
     "VACANCY_SRVC_UNDER36", 
-    "<36 Month", 
+    "", 
     shared_dat, 
     ~VACANCY_SRVC_UNDER36
   ),
   filter_checkbox(
     "VACANCY_SRVC_30MOS_5YRS", 
-    "30 Months - 5 Years", 
+    "", 
     shared_dat,
     ~VACANCY_SRVC_30MOS_5YRS
   ),
   filter_checkbox(
     "VACANCY_SRVC_LICPRE", 
-    "LICPRE", 
+    "", 
     shared_dat, 
     ~VACANCY_SRVC_LICPRE
   ),
   filter_checkbox(
     "VACANCY_SRVC_OOS_GR1_AGE12",
-    "OOS_GR1_AGE12", 
+    "", 
     shared_dat, 
     ~VACANCY_SRVC_OOS_GR1_AGE12
   )
-)
+) |> htmltools::browsable()
 ```
 
 ### Column 
