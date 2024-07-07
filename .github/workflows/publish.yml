@@ -2,6 +2,8 @@ on:
   workflow_dispatch:
   push:
     branches: main
+  schedule:
+    - cron: '41 15 * * *'  # trigger at 3:41 pm UTC (8:41 AM PST)
 
 name: Quarto Publish
 
@@ -23,9 +25,15 @@ jobs:
           r-version: '4.4.0'
 
       - name: Install R Dependencies
-        uses: r-lib/actions/setup-renv@v2
+        uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          cache-version: 1
+          packages: |
+            tidyverse
+            glue
+            reactable
+            htmltools
+            crosstalk
+            leaflet
 
       - name: Render and Publish
         uses: quarto-dev/quarto-actions/publish@v2
