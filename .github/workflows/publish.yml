@@ -24,6 +24,9 @@ jobs:
         with:
           r-version: '4.4.0'
 
+      - name: Install system dependencies
+        run: sudo apt-get install libudunits2-dev libcurl4-openssl-dev libgdal-dev
+        
       - name: Install R Dependencies
         uses: r-lib/actions/setup-renv@v2
 
