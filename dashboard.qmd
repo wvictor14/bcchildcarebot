@@ -149,8 +149,11 @@ tbl_data <- bccc |>
   # if yes, replace with vacancy type, otherwise leave as NA
   # NA will not show as a choice
   pivot_longer(contains('VACANCY_SRVC_')) |> 
-  mutate(value = ifelse(value == 'Y', str_remove_all(name, 'VACANCY_SRVC_'), NA)) |>  
-  pivot_wider(names_from = name, values_from = value)
+  mutate(value = ifelse(value == 'Y', str_remove_all(name, 'VACANCY_SRVC_'), NA)) |>
+  mutate(.by = id,
+         Vacancies = str_c(value, collapse = ', ')
+         ) |> 
+  pivot_wider(names_from = name, values_from = value) 
 
 shared_dat <- SharedData$new(tbl_data, key = ~id)
 
@@ -158,6 +161,7 @@ shared_dat <- SharedData$new(tbl_data, key = ~id)
 hide <- tbl_data |> 
   select(
     contains('VACANCY'),
+    Vacancies,
     LONGITUDE, LATITUDE,
     SERVICE_TYPE_CD,
     ADDRESS_1, PHONE,
@@ -176,7 +180,13 @@ hide <- tbl_data |>
 ```{r }
 htmltools::div(
   id = "filterdiv",
-  filter_select("CITY", "CITY", shared_dat, ~CITY),
+  crosstalk::filter_slider(
+    "VACANCY_LAST_UPDATE", 
+    "Last updated:", 
+    shared_dat, 
+    ~VACANCY_LAST_UPDATE
+  ),
+  filter_select("CITY", "City:", shared_dat, ~CITY),
   filter_checkbox(
     "VACANCY_SRVC_UNDER36", 
     "", 
@@ -220,12 +230,14 @@ row_details <- function(index, bccc) {
     div(class = "detail-header", 
         span(class = "detail-title", bccc$NAME)),
     div(class = "detail-description", bccc$SERVICE_TYPE_CD),
+    df_field('Last Updated', bccc$VACANCY_LAST_UPDATE),
     df_field("Phone", bccc$PHONE),
     df_field("Website", bccc$WEBSITE),
     df_field("Email", bccc$EMAIL),
     df_field("Address", bccc$ADDRESS_1),
     df_field('Address 2', bccc$ADDRESS_2),
     df_field('City', bccc$CITY),
+    df_field('Vacancies', bccc$Vacancies),
     df_field(
       'Map', 
       bccc |> 
