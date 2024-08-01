@@ -12,10 +12,13 @@ format:
         href: https://github.com/wvictor14/bcchildcarebot
       - icon: mastodon
         href: https://botsin.space/@bcchildcarebot
+      - icon: house-fill
+        href: https://victoryuan.com/
 editor_options: 
   chunk_output_type: console
 ---
 
+# Vacancies
 
 ```{r}
 #| include: FALSE
@@ -39,6 +42,12 @@ bccc <- readr::read_csv(url)
 Last updated: `{r} .today`
 
 Every day, new vacancies across BC Child Care facilities will be listed here. 
+
+BC Childcare Map Data is used to identify and extract facilities with up-to-date vacancy information[^1]. Up-to-date is defined as being vacancy information updated within last 7 days.
+
+[^1]: I cannot guarantee that the "last updated" information or any other information is accurate. In my experience, some information is not accurate in the BC Child Care Map dataset.
+
+
 
 ```{css}
 #filterdiv {
@@ -272,4 +281,23 @@ bccc |>
   #addProviderTiles(providers$CartoDB.Positron) |>
   addCircleMarkers()
 
+```
+
+# Dev
+
+```{r}
+
+ojs_define(tbl_data = tbl_data)
+```
+
+
+```{ojs}
+yearlyChart = Plot.plot({
+  marks: [
+    Plot.line(transpose(tbl_data), 
+      {x: "LONGITUDE", y: "LATITUDE"}, 
+      { stroke: "black" }
+    )
+  ]}
+)
 ```
