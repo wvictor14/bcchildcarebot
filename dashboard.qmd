@@ -152,9 +152,6 @@ tbl_data <- bccc |>
   # NA will not show as a choice
   pivot_longer(contains('VACANCY_SRVC_')) |> 
   mutate(value = ifelse(value == 'Y', str_remove_all(name, 'VACANCY_SRVC_'), NA)) |>
-  mutate(.by = id,
-         Vacancies = str_c(value, collapse = ', ')
-         ) |> 
   pivot_wider(names_from = name, values_from = value) 
 
 shared_dat <- SharedData$new(tbl_data, key = ~id)
@@ -163,7 +160,6 @@ shared_dat <- SharedData$new(tbl_data, key = ~id)
 hide <- tbl_data |> 
   select(
     contains('VACANCY'), -VACANCY_LAST_UPDATE,
-    Vacancies,
     LONGITUDE, LATITUDE,
     SERVICE_TYPE_CD,
     ADDRESS_1, PHONE,
