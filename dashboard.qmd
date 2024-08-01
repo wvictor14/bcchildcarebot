@@ -137,6 +137,11 @@ tbl_data <- bccc |>
     SERVICE_TYPE_CD:CITY, 
     PHONE:EMAIL,
     LONGITUDE, LATITUDE,
+    
+    # certs
+    ECE_CERTIFICATION_YN,
+    ELF_PROGRAMMING_YN,
+    IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
     #    contains('OP_'),
     #   contains('SRVC_'),
     #  contains('LANG_'),
@@ -156,14 +161,20 @@ tbl_data <- bccc |>
 
 shared_dat <- SharedData$new(tbl_data, key = ~id)
 
-# columns to hide
+# columns to hide from unested view
 hide <- tbl_data |> 
   select(
     contains('VACANCY'), -VACANCY_LAST_UPDATE,
     LONGITUDE, LATITUDE,
     SERVICE_TYPE_CD,
     ADDRESS_1, PHONE,
-    id, `ADDRESS_2`, WEBSITE, EMAIL) |> 
+    id, `ADDRESS_2`, WEBSITE, EMAIL,
+    
+    ECE_CERTIFICATION_YN,
+    ELF_PROGRAMMING_YN,
+    IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
+    
+    ) |> 
   colnames() %>%
   setNames(., .) |> 
   map(
@@ -257,6 +268,12 @@ row_details <- function(index, bccc) {
         class = "vacancy-table",
         theme = reactableTheme(cellPadding = "8px 12px")
       )),
+    
+    df_field('ECE_CERTIFICATION_YN', bccc$ECE_CERTIFICATION_YN),
+    df_field('ELF', bccc$ELF_PROGRAMMING_YN),
+    df_field('IS_INCOMPLETE_IND', bccc$IS_INCOMPLETE_IND), 
+    df_field('IS_CCFRI_AUTH', bccc$IS_CCFRI_AUTH),
+    
     df_field(
       'Map', 
       bccc |> 
@@ -298,23 +315,4 @@ bccc |>
   #addProviderTiles(providers$CartoDB.Positron) |>
   addCircleMarkers()
 
-```
-
-# Dev
-
-```{r}
-
-ojs_define(tbl_data = tbl_data)
-```
-
-
-```{ojs}
-yearlyChart = Plot.plot({
-  marks: [
-    Plot.line(transpose(tbl_data), 
-      {x: "LONGITUDE", y: "LATITUDE"}, 
-      { stroke: "black" }
-    )
-  ]}
-)
 ```
