@@ -87,7 +87,9 @@ BC Childcare Map Data is used to identify and extract facilities with up-to-date
   margin-left: 0.15em;
   color: rgba(0, 0, 0, 0.6);
 }
-
+.rt-table {
+  font-size: medium;
+}
 .tbl-title {
   font-size: 0.875rem;
 }
@@ -160,7 +162,7 @@ shared_dat <- SharedData$new(tbl_data, key = ~id)
 # columns to hide
 hide <- tbl_data |> 
   select(
-    contains('VACANCY'),
+    contains('VACANCY'), -VACANCY_LAST_UPDATE,
     Vacancies,
     LONGITUDE, LATITUDE,
     SERVICE_TYPE_CD,
