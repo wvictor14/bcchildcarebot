@@ -175,6 +175,14 @@ hide <- tbl_data |>
       show = FALSE
     )
   )
+
+show <- list(
+  VACANCY_LAST_UPDATE = colDef(name = 'Last Updated'),
+  NAME = colDef(name = 'Name'),
+  CITY = colDef(name = 'City')
+)
+
+coldefs <- purrr::list_flatten(list(hide, show))
 ```
 
 ### Column {width=20%}
@@ -219,6 +227,7 @@ htmltools::div(
 ### Column 
 
 ```{r}
+#| padding: 0px
 row_details <- function(index, bccc) {
   bccc <- bccc[index, ] 
   # function that creates class based on colum name
@@ -239,7 +248,19 @@ row_details <- function(index, bccc) {
     df_field("Address", bccc$ADDRESS_1),
     df_field('Address 2', bccc$ADDRESS_2),
     df_field('City', bccc$CITY),
-    df_field('Vacancies', bccc$Vacancies),
+    df_field(
+      "Vacancy type",
+      reactable(
+        bccc |>  
+          select(contains('VACANCY_SRVC_')) |> 
+          pivot_longer(everything(), names_to = 'Age Group', values_to = 'Vacancy?') |> 
+          mutate(`Vacancy?` = ifelse(!is.na(`Vacancy?`), 'Y', 'N'))
+        ,
+        pagination = FALSE,
+        defaultColDef = colDef(headerClass = "header"),
+        class = "vacancy-table",
+        theme = reactableTheme(cellPadding = "8px 12px")
+      )),
     df_field(
       'Map', 
       bccc |> 
@@ -247,22 +268,8 @@ row_details <- function(index, bccc) {
         addProviderTiles(providers$CartoDB.Voyager) |>
         #addProviderTiles(providers$CartoDB.Positron) |>
         addCircleMarkers()
-    ),
-    
-    df_field(
-      "Vacancy type",
-      reactable(
-        bccc |>  
-          select(contains('VACANCY_SRVC_')) |> 
-          pivot_longer(everything(), names_to = 'Age Group', values_to = 'Vacancy?')
-        ,
-        pagination = FALSE,
-        defaultColDef = colDef(headerClass = "header"),
-        class = "vacancy-table",
-        theme = reactableTheme(cellPadding = "8px 12px")
-      ))
+    )
   )
-  
   detail
 }
 
@@ -271,13 +278,14 @@ row_details <- function(index, bccc) {
 
 reactable(
   shared_dat,
-  defaultSorted = "CITY",
+  defaultSorted = "VACANCY_LAST_UPDATE",
+  defaultSortOrder = "desc",
   defaultColDef = colDef(
     # show = FALSE,
     headerClass = "header", align = "left"),
   onClick = "expand",
   resizable = TRUE,
-  columns = hide,
+  columns = coldefs,
   details = function(index) row_details(index, tbl_data)
 )
 ```
