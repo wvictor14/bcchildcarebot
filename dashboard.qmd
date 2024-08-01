@@ -126,9 +126,9 @@ height:25px !important;
 # filter and clean
 tbl_data <- bccc |>
   
-  # filter to yesterday, and group of interest
+  # filter to yesterday + 7 days, and group of interest
   filter(
-    VACANCY_LAST_UPDATE >= .today -1
+    VACANCY_LAST_UPDATE >= .today -1 -7
   )  |> 
   
   # filter columns
