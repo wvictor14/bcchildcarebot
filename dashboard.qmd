@@ -5,7 +5,7 @@ format:
   dashboard:
     mainfont: Nunito, sans-serif
     orientation: rows
-    scrolling: true
+    scrolling: false
     embed-resources: true
     nav-buttons: 
       - icon: github
