@@ -173,41 +173,14 @@ tbl_data <- bccc |>
   mutate(value = ifelse(value == 'Y', str_remove_all(name, 'VACANCY_SRVC_'), NA)) |>
   pivot_wider(names_from = name, values_from = value) 
 
-shared_dat <- SharedData$new(tbl_data, key = ~id)
-
-# columns to hide from unested view
-hide <- tbl_data |> 
-  select(
-    contains('VACANCY'), -VACANCY_LAST_UPDATE,
-    LONGITUDE, LATITUDE,
-    SERVICE_TYPE_CD,
-    ADDRESS_1, PHONE,
-    id, `ADDRESS_2`, WEBSITE, EMAIL,
-    
-    ECE_CERTIFICATION_YN,
-    ELF_PROGRAMMING_YN,
-    IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
-    popup,
-    
-  ) |> 
-  colnames() %>%
-  setNames(., .) |> 
-  map(
-    ~colDef(
-      show = FALSE
-    )
-  )
-
-show <- list(
-  VACANCY_LAST_UPDATE = colDef(name = 'Last Updated'),
-  NAME = colDef(name = 'Name'),
-  CITY = colDef(name = 'City')
-)
-
-coldefs <- purrr::list_flatten(list(hide, show))
+shared_data <- SharedData$new(tbl_data, key = ~id)
 ```
 
+## Row 2
+
 ### Column {width=20%}
+
+#### filters
 
 ```{r }
 htmltools::div(
@@ -215,62 +188,79 @@ htmltools::div(
   crosstalk::filter_slider(
     "VACANCY_LAST_UPDATE", 
     "Last updated:", 
-    shared_dat, 
+    shared_data, 
     ~VACANCY_LAST_UPDATE
   ),
-  filter_select("CITY", "City:", shared_dat, ~CITY),
+  filter_select("CITY", "City:", shared_data, ~CITY),
   filter_checkbox(
     "VACANCY_SRVC_UNDER36", 
     "", 
-    shared_dat, 
+    shared_data, 
     ~VACANCY_SRVC_UNDER36
   ),
   filter_checkbox(
     "VACANCY_SRVC_30MOS_5YRS", 
     "", 
-    shared_dat,
+    shared_data,
     ~VACANCY_SRVC_30MOS_5YRS
   ),
   filter_checkbox(
     "VACANCY_SRVC_LICPRE", 
     "", 
-    shared_dat, 
+    shared_data, 
     ~VACANCY_SRVC_LICPRE
   ),
   filter_checkbox(
     "VACANCY_SRVC_OOS_GR1_AGE12",
     "", 
-    shared_dat, 
+    shared_data, 
     ~VACANCY_SRVC_OOS_GR1_AGE12
   )
-) |> htmltools::browsable()
+)
 ```
 
-### Column
-
-#### Map
+### Column Map 
 
 ```{r}
 #| padding: 0px
-shared_dat |> 
+
+icons <- awesomeIcons(
+  icon = 'home',
+  iconColor = 'black',
+  library = 'glyphicon'
+)
+
+shared_data |> 
   
   # map
   leaflet() |>
-  setView(-123.0667922, 49.1797712, zoom = 10) |> 
+  setView(-123.0667922, 52, zoom = 5) |> 
   
   addProviderTiles(providers$CartoDB.Voyager) |>
-  #addProviderTiles(providers$CartoDB.Positron) |>
+  #providers$CartoDB.Positron
   addCircleMarkers(
-    popup = ~popup, label = ~NAME,
-    clusterOptions = markerClusterOptions(),
-    stroke = FALSE, fillOpacity = 0.5
+    popup = ~popup, 
+    label = ~NAME,
+    #usterOptions = markerClusterOptions(),
+    #icon = icons
+    stroke = FALSE,  fillOpacity = 0.6,
+    color = '#303573',
+    radius = 3.8
   )
+
 ```
 
-#### Table
+## Row 3 Table 
+
+```{r dev}
+#| padding: 0px
+#| eval: false
+reactable(bccc[1:10,])
+```
 
 ```{r}
 #| padding: 0px
+#| eval: true
 row_details <- function(index, bccc) {
   bccc <- bccc[index, ] 
   # function that creates class based on colum name
@@ -324,9 +314,40 @@ row_details <- function(index, bccc) {
 
 #htmltools::browsable(row_details(1, bccc))
 
+# columns to hide from unested view
+hide <- tbl_data |> 
+  select(
+    contains('VACANCY'), -VACANCY_LAST_UPDATE,
+    LONGITUDE, LATITUDE,
+    SERVICE_TYPE_CD,
+    ADDRESS_1, PHONE,
+    id, `ADDRESS_2`, WEBSITE, EMAIL,
+    
+    ECE_CERTIFICATION_YN,
+    ELF_PROGRAMMING_YN,
+    IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
+    popup,
+    
+  ) |> 
+  colnames() %>%
+  setNames(., .) |> 
+  map(
+    ~colDef(
+      show = FALSE
+    )
+  )
+
+show <- list(
+  VACANCY_LAST_UPDATE = colDef(name = 'Last Updated'),
+  NAME = colDef(name = 'Name'),
+  CITY = colDef(name = 'City')
+)
+
+coldefs <- purrr::list_flatten(list(hide, show))
+
 
 reactable(
-  shared_dat,
+  shared_data,
   defaultSorted = "VACANCY_LAST_UPDATE",
   defaultSortOrder = "desc",
   defaultColDef = colDef(
