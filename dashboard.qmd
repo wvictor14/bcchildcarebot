@@ -42,82 +42,79 @@ bccc <- readr::read_csv(url)
 Last updated: `{r} .today`
 
 Every day, new vacancies across BC Child Care facilities will be listed here. 
-
 BC Childcare Map Data is used to identify and extract facilities with up-to-date vacancy information[^1]. Up-to-date is defined as being vacancy information updated within last 7 days.
 
-[^1]: I cannot guarantee that the "last updated" information or any other information is accurate. In my experience, some information is not accurate in the BC Child Care Map dataset.
-
-
+[^1]: I cannot guarantee that the "last updated" information or any other information is accurate. In my experience, some information is not accurate.
 
 ```{css}
 #filterdiv {
-  display:block;
-  font-size: 0.9375rem;
-  margin-bottom: 0px !important;
-  margin-left: 10px;
-  margin-right: 10px;
+display:block;
+font-size: 0.9375rem;
+margin-bottom: 0px !important;
+margin-left: 10px;
+margin-right: 10px;
 }
 .crosstalk-input {
-  margin-bottom: 0px;
+margin-bottom: 0px;
 }
 .title {
-  font-size: 1.5rem;
+font-size: 1.5rem;
 }
 
 .packages-table {
-  margin-top: 1rem;
-  font-size: 0.9375rem;
-  border: 1px solid hsl(213, 33%, 93%);
-  border-radius: 4px;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+margin-top: 1rem;
+font-size: 0.9375rem;
+border: 1px solid hsl(213, 33%, 93%);
+border-radius: 4px;
+box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
 }
 
 .header {
-  background-color: hsl(213, 45%, 97%);
-  border-bottom-color: hsl(213, 33%, 93%);
-  border-bottom-width: 1px;
-  color: hsl(213, 13%, 33%);
+background-color: hsl(213, 45%, 97%);
+border-bottom-color: hsl(213, 33%, 93%);
+border-bottom-width: 1px;
+color: hsl(213, 13%, 33%);
 }
 
 .header[aria-sort]:hover, .header[aria-sort]:focus {
-  color: hsl(213, 55%, 50%);
+color: hsl(213, 55%, 50%);
 }
 
 .units {
-  margin-left: 0.15em;
-  color: rgba(0, 0, 0, 0.6);
+margin-left: 0.15em;
+color: rgba(0, 0, 0, 0.6);
 }
 .rt-table {
-  font-size: medium;
+font-size: medium;
 }
 .tbl-title {
-  font-size: 0.875rem;
+font-size: 0.875rem;
 }
 
 .tbl-detail {
-  padding: 24px;
-  box-shadow: inset 0 1px 3px #dbdbdb;
-  background: hsl(213, 20%, 99%);
+padding: 24px;
+box-shadow: inset 0 1px 3px #dbdbdb;
+background: hsl(213, 20%, 99%);
 }
 
 .detail-label {
-  margin: 1.25rem 0 0.25rem;
-  font-size: 0.875rem;
-  color: rgba(0, 0, 0, 0.6);
+margin: 1.25rem 0 0.25rem;
+font-size: 0.875rem;
+color: rgba(0, 0, 0, 0.6);
 }
 
 .detail-title {
-  margin-bottom: 1rem;
-  font-size: 1.25rem;
-  font-weight: 600;
+margin-bottom: 1rem;
+font-size: 1.25rem;
+font-weight: 600;
 }
 
 .detail-description {
-  font-size: 0.875rem;
+font-size: 0.875rem;
 }
 #VACANCY_LAST_UPDATE #VACANCY_SRVC_UNDER36 #VACANCY_SRVC_30MOS_5YRS 
 #VACANCY_SRVC_LICPRE #VACANCY_SRVC_OOS_GR1_AGE12 {
-  height:25px !important;
+height:25px !important;
 }
 ```
 
@@ -144,7 +141,7 @@ tbl_data <- bccc |>
     IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
     #    contains('OP_'),
     #   contains('SRVC_'),
-    #  contains('LANG_'),
+    contains('LANG_'),
     contains('VACANCY_') ) |> 
   
   select(NAME, everything()) |>
@@ -274,40 +271,76 @@ row_details <- function(index, bccc) {
     div(class = "detail-header", 
         span(class = "detail-title", bccc$NAME)),
     div(class = "detail-description", bccc$SERVICE_TYPE_CD),
-    df_field('Last Updated', bccc$VACANCY_LAST_UPDATE),
-    df_field("Phone", bccc$PHONE),
-    df_field("Website", bccc$WEBSITE),
-    df_field("Email", bccc$EMAIL),
-    df_field("Address", bccc$ADDRESS_1),
-    df_field('Address 2', bccc$ADDRESS_2),
-    df_field('City', bccc$CITY),
-    df_field(
-      "Vacancy type",
-      reactable(
-        bccc |>  
-          select(contains('VACANCY_SRVC_')) |> 
-          pivot_longer(everything(), names_to = 'Age Group', values_to = 'Vacancy?') |> 
-          mutate(`Vacancy?` = ifelse(!is.na(`Vacancy?`), 'Y', 'N'))
-        ,
-        pagination = FALSE,
-        defaultColDef = colDef(headerClass = "header"),
-        class = "vacancy-table",
-        theme = reactableTheme(cellPadding = "8px 12px")
-      )),
-    
-    df_field('ECE_CERTIFICATION_YN', bccc$ECE_CERTIFICATION_YN),
-    df_field('ELF', bccc$ELF_PROGRAMMING_YN),
-    df_field('IS_INCOMPLETE_IND', bccc$IS_INCOMPLETE_IND), 
-    df_field('IS_CCFRI_AUTH', bccc$IS_CCFRI_AUTH),
-    
     df_field(
       'Map', 
       bccc |> 
         leaflet() |>
         addProviderTiles(providers$CartoDB.Voyager) |>
         #addProviderTiles(providers$CartoDB.Positron) |>
-        addCircleMarkers()
+        addCircleMarkers(lng = ~LONGITUDE, lat = ~LATITUDE)
+    ),
+    
+    bscols(
+      div(
+        df_field('Last Updated', bccc$VACANCY_LAST_UPDATE),
+        df_field("Phone", bccc$PHONE),
+        df_field("Website", bccc$WEBSITE),
+        df_field("Email", bccc$EMAIL),
+        df_field("Address", bccc$ADDRESS_1),
+        df_field('Address 2', bccc$ADDRESS_2),
+        df_field('City', bccc$CITY),
+      ),
+      div(
+        
+        df_field(
+          "Vacancy type",
+          reactable(
+            bccc |>  
+              select(contains('VACANCY_SRVC_')) |> 
+              pivot_longer(
+                everything(), 
+                names_to = 'Age Group', 
+                values_to = 'Vacancy?',
+                names_prefix = 'VACANCY_SRVC_'
+              ) |> 
+              mutate(`Vacancy?` = ifelse(!is.na(`Vacancy?`), 'Y', 'N'))
+            ,
+            pagination = FALSE,
+            defaultColDef = colDef(headerClass = "header"),
+            class = "vacancy-table",
+            theme = reactableTheme(cellPadding = "8px 12px")
+          )),
+      )
+    ),
+    
+    
+    bscols(
+      div(
+        
+        df_field('ECE_CERTIFICATION_YN', bccc$ECE_CERTIFICATION_YN),
+        df_field('ELF', bccc$ELF_PROGRAMMING_YN),
+        df_field('IS_INCOMPLETE_IND', bccc$IS_INCOMPLETE_IND), 
+        df_field('IS_CCFRI_AUTH', bccc$IS_CCFRI_AUTH)
+      ),
+      div(
+        
+        df_field(
+          'Language',
+          reactable(
+            bccc |>  
+              select(contains('LANG_')) |> 
+              pivot_longer(everything(), names_to = 'Language', values_to = 'Y/N') |> 
+              mutate(`Y/N` = ifelse(!is.na(`Y/N`), 'Y', 'N'))
+            ,
+            pagination = FALSE,
+            defaultColDef = colDef(headerClass = "header"),
+            class = "vacancy-table",
+            theme = reactableTheme(cellPadding = "8px 12px")
+          )
+        )
+      )
     )
+    
   )
   detail
 }
@@ -327,6 +360,7 @@ hide <- tbl_data |>
     ELF_PROGRAMMING_YN,
     IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
     popup,
+    contains('LANG_')
     
   ) |> 
   colnames() %>%
@@ -347,7 +381,8 @@ coldefs <- purrr::list_flatten(list(hide, show))
 
 
 reactable(
-  shared_data,
+  #shared_data,
+  tbl_data[1:10,],
   defaultSorted = "VACANCY_LAST_UPDATE",
   defaultSortOrder = "desc",
   defaultColDef = colDef(
