@@ -252,7 +252,7 @@ htmltools::div(
 
 ```{r}
 #| padding: 0px
-shared_data |> 
+shared_dat |> 
   
   # map
   leaflet() |>
