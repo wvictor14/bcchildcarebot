@@ -18,9 +18,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Vacancies
-
-```{r}
+```{r load_libraries}
 #| include: FALSE
 library(tidyverse)
 library(glue)
@@ -30,21 +28,13 @@ library(crosstalk)
 library(leaflet)
 ```
 
-```{r}
+```{r load_data}
 #| include: FALSE
-
 # read in bc child care data ----
 url <- 'https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af5224646/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39/download/childcare_locations.csv'
 bccc <- readr::read_csv(url)
 .today <- lubridate::today(tzone = 'Canada/Pacific')
 ```
-
-Last updated: `{r} .today`
-
-Every day, new vacancies across BC Child Care facilities will be listed here. 
-BC Childcare Map Data is used to identify and extract facilities with up-to-date vacancy information[^1]. Up-to-date is defined as being vacancy information updated within last 7 days.
-
-[^1]: I cannot guarantee that the "last updated" information or any other information is accurate. In my experience, some information is not accurate.
 
 ```{css}
 #filterdiv {
@@ -118,7 +108,6 @@ height:25px !important;
 }
 ```
 
-## Row {height=30%}
 
 ```{r setup_tbl_data}
 # filter and clean
@@ -163,23 +152,37 @@ tbl_data <- bccc |>
   # crosstalk key
   mutate(id = row_number()) |> 
   
-  # clean vacancy column
+  # clean vacancy and other binary columns for filters
+  
   # if yes, replace with vacancy type, otherwise leave as NA
   # NA will not show as a choice
-  pivot_longer(contains('VACANCY_SRVC_')) |> 
-  mutate(value = ifelse(value == 'Y', str_remove_all(name, 'VACANCY_SRVC_'), NA)) |>
+  pivot_longer(
+    cols =  c(
+      contains('VACANCY_SRVC_'), 
+      contains('LANG_'),
+      ECE_CERTIFICATION_YN,
+      ELF_PROGRAMMING_YN
+    ),
+    names_to = 'name',
+    values_to = 'value'
+  ) |> 
+  mutate(value = ifelse(
+    value == 'Y', 
+    str_remove_all(name, '^VACANCY_SRVC_') |> 
+      str_remove_all('^LANG_') |> 
+      str_remove_all('_YN$'),
+    
+    NA
+  )) |>
   pivot_wider(names_from = name, values_from = value) 
 
 shared_data <- SharedData$new(tbl_data, key = ~id)
 ```
 
-## Row 2
+# sidebar {.sidebar}
 
-### Column {width=20%}
-
-#### filters
-
-```{r }
+```{r filters}
+#| panel: sidebar
 htmltools::div(
   id = "filterdiv",
   crosstalk::filter_slider(
@@ -189,6 +192,22 @@ htmltools::div(
     ~VACANCY_LAST_UPDATE
   ),
   filter_select("CITY", "City:", shared_data, ~CITY),
+  
+  h4('Certifications'),
+  filter_checkbox(
+    "ECE_CERTIFICATION_YN", 
+    "", 
+    shared_data, 
+    ~ECE_CERTIFICATION_YN
+  ),
+  filter_checkbox(
+    "ELF_PROGRAMMING_YN", 
+    "", 
+    shared_data, 
+    ~ELF_PROGRAMMING_YN
+  ),
+  
+  h4('Age'),
   filter_checkbox(
     "VACANCY_SRVC_UNDER36", 
     "", 
@@ -212,11 +231,61 @@ htmltools::div(
     "", 
     shared_data, 
     ~VACANCY_SRVC_OOS_GR1_AGE12
-  )
-)
+  ),
+  
+  # language filters
+  h4('Language'),
+  filter_checkbox(
+    "LANG_CANTONESE_YN",
+    "", 
+    shared_data, 
+    ~LANG_CANTONESE_YN
+  ),
+  filter_checkbox(
+    "LANG_MANDARIN_YN",
+    "", 
+    shared_data, 
+    ~LANG_MANDARIN_YN
+  ),
+  filter_checkbox(
+    "LANG_PUNJABI_YN",
+    "", 
+    shared_data, 
+    ~LANG_PUNJABI_YN
+  ),
+  filter_checkbox(
+    "LANG_FRENCH_YN",
+    "", 
+    shared_data, 
+    ~LANG_FRENCH_YN
+  ),
+  filter_checkbox(
+    "LANG_SPANISH_YN",
+    "", 
+    shared_data, 
+    ~LANG_SPANISH_YN
+  ),
+  filter_checkbox(
+    "LANG_OTHER_YN",
+    "", 
+    shared_data, 
+    ~LANG_OTHER_YN
+  ),
+) |>  htmltools::browsable()
 ```
 
-### Column Map 
+# Vacancies Map
+
+## Row {height=30%}
+
+Last updated: `{r} .today`
+
+Every day, new vacancies across BC Child Care facilities will be listed here. 
+BC Childcare Map Data is used to identify and extract facilities with up-to-date vacancy information[^1]. Up-to-date is defined as being vacancy information updated within last 7 days.
+
+[^1]: I cannot guarantee that the "last updated" information or any other information is accurate. In my experience, some information is not accurate.
+
+## Row Map
 
 ```{r}
 #| padding: 0px
@@ -242,12 +311,14 @@ shared_data |>
     #icon = icons
     stroke = FALSE,  fillOpacity = 0.6,
     color = '#303573',
-    radius = 3.8
+    radius = 4.5
   )
 
 ```
 
-## Row 3 Table 
+# Table 
+
+## Row
 
 ```{r dev}
 #| padding: 0px
@@ -271,17 +342,10 @@ row_details <- function(index, bccc) {
     div(class = "detail-header", 
         span(class = "detail-title", bccc$NAME)),
     div(class = "detail-description", bccc$SERVICE_TYPE_CD),
-    df_field(
-      'Map', 
-      bccc |> 
-        leaflet() |>
-        addProviderTiles(providers$CartoDB.Voyager) |>
-        #addProviderTiles(providers$CartoDB.Positron) |>
-        addCircleMarkers(lng = ~LONGITUDE, lat = ~LATITUDE)
-    ),
     
     bscols(
       div(
+        # column left
         df_field('Last Updated', bccc$VACANCY_LAST_UPDATE),
         df_field("Phone", bccc$PHONE),
         df_field("Website", bccc$WEBSITE),
@@ -289,9 +353,25 @@ row_details <- function(index, bccc) {
         df_field("Address", bccc$ADDRESS_1),
         df_field('Address 2', bccc$ADDRESS_2),
         df_field('City', bccc$CITY),
+        df_field('ECE_CERTIFICATION_YN', bccc$ECE_CERTIFICATION_YN),
+        df_field('ELF', bccc$ELF_PROGRAMMING_YN),
+        df_field('IS_INCOMPLETE_IND', bccc$IS_INCOMPLETE_IND), 
+        df_field('IS_CCFRI_AUTH', bccc$IS_CCFRI_AUTH)
       ),
+      div( 
+        # column right
+        df_field(
+          'Map', 
+          bccc |> 
+            leaflet() |>
+            addProviderTiles(providers$CartoDB.Voyager) |>
+            #addProviderTiles(providers$CartoDB.Positron) |>
+            addCircleMarkers(lng = ~LONGITUDE, lat = ~LATITUDE)
+        )
+      )
+    ),
+    bscols(
       div(
-        
         df_field(
           "Vacancy type",
           reactable(
@@ -309,21 +389,10 @@ row_details <- function(index, bccc) {
             defaultColDef = colDef(headerClass = "header"),
             class = "vacancy-table",
             theme = reactableTheme(cellPadding = "8px 12px")
-          )),
-      )
-    ),
-    
-    
-    bscols(
-      div(
-        
-        df_field('ECE_CERTIFICATION_YN', bccc$ECE_CERTIFICATION_YN),
-        df_field('ELF', bccc$ELF_PROGRAMMING_YN),
-        df_field('IS_INCOMPLETE_IND', bccc$IS_INCOMPLETE_IND), 
-        df_field('IS_CCFRI_AUTH', bccc$IS_CCFRI_AUTH)
+          )
+        )
       ),
       div(
-        
         df_field(
           'Language',
           reactable(
@@ -340,7 +409,6 @@ row_details <- function(index, bccc) {
         )
       )
     )
-    
   )
   detail
 }
@@ -378,7 +446,6 @@ show <- list(
 )
 
 coldefs <- purrr::list_flatten(list(hide, show))
-
 
 reactable(
   #shared_data,
