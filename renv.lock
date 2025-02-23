@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.4.0",
+    "Version": "4.4.2",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -804,12 +804,17 @@
     "lazyeval": {
       "Package": "lazyeval",
       "Version": "0.2.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "hadley",
+      "RemoteRepo": "lazyeval",
+      "RemoteRef": "master",
+      "RemoteSha": "f2ee93f5560df506a5ce3bdac7315e82c464408b",
       "Requirements": [
         "R"
       ],
-      "Hash": "d908914ae53b04d4c0c0fd72ecc35370"
+      "Hash": "9725cfa8bd557aabf678748291a66eba"
     },
     "leaflet": {
       "Package": "leaflet",
