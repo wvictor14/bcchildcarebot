@@ -29,87 +29,16 @@ library(leaflet)
 ```
 
 ```{r load_data}
-#| include: FALSE
+#| include: false
 # read in bc child care data ----
 url <- 'https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af5224646/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39/download/childcare_locations.csv'
 bccc <- readr::read_csv(url)
 .today <- lubridate::today(tzone = 'Canada/Pacific')
 ```
 
-```{css}
-#filterdiv {
-display:block;
-font-size: 0.9375rem;
-margin-bottom: 0px !important;
-margin-left: 10px;
-margin-right: 10px;
-}
-.crosstalk-input {
-margin-bottom: 0px;
-}
-.title {
-font-size: 1.5rem;
-}
-
-.packages-table {
-margin-top: 1rem;
-font-size: 0.9375rem;
-border: 1px solid hsl(213, 33%, 93%);
-border-radius: 4px;
-box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
-}
-
-.header {
-background-color: hsl(213, 45%, 97%);
-border-bottom-color: hsl(213, 33%, 93%);
-border-bottom-width: 1px;
-color: hsl(213, 13%, 33%);
-}
-
-.header[aria-sort]:hover, .header[aria-sort]:focus {
-color: hsl(213, 55%, 50%);
-}
-
-.units {
-margin-left: 0.15em;
-color: rgba(0, 0, 0, 0.6);
-}
-.rt-table {
-font-size: medium;
-}
-.tbl-title {
-font-size: 0.875rem;
-}
-
-.tbl-detail {
-padding: 24px;
-box-shadow: inset 0 1px 3px #dbdbdb;
-background: hsl(213, 20%, 99%);
-}
-
-.detail-label {
-margin: 1.25rem 0 0.25rem;
-font-size: 0.875rem;
-color: rgba(0, 0, 0, 0.6);
-}
-
-.detail-title {
-margin-bottom: 1rem;
-font-size: 1.25rem;
-font-weight: 600;
-}
-
-.detail-description {
-font-size: 0.875rem;
-}
-#VACANCY_LAST_UPDATE #VACANCY_SRVC_UNDER36 #VACANCY_SRVC_30MOS_5YRS 
-#VACANCY_SRVC_LICPRE #VACANCY_SRVC_OOS_GR1_AGE12 {
-height:25px !important;
-}
-```
-
 
 ```{r setup_tbl_data}
+#| include: false
 # filter and clean
 tbl_data <- bccc |>
   
@@ -179,10 +108,83 @@ tbl_data <- bccc |>
 shared_data <- SharedData$new(tbl_data, key = ~id)
 ```
 
-# sidebar {.sidebar}
+# sidebar {.sidebar width="300px"}
+
+
+```{css}
+#filterdiv {
+display:block;
+font-size: 0.9375rem;
+margin-bottom: 0px !important;
+margin-left: 10px;
+margin-right: 10px;
+}
+.crosstalk-input {
+margin-bottom: 0px;
+margin-top: -5px;
+}
+.title {
+font-size: 1.5rem;
+}
+
+.packages-table {
+margin-top: 1rem;
+font-size: 0.9375rem;
+border: 1px solid hsl(213, 33%, 93%);
+border-radius: 4px;
+box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+}
+
+.header {
+background-color: hsl(213, 45%, 97%);
+border-bottom-color: hsl(213, 33%, 93%);
+border-bottom-width: 1px;
+color: hsl(213, 13%, 33%);
+}
+
+.header[aria-sort]:hover, .header[aria-sort]:focus {
+color: hsl(213, 55%, 50%);
+}
+
+.units {
+margin-left: 0.15em;
+color: rgba(0, 0, 0, 0.6);
+}
+.rt-table {
+font-size: medium;
+}
+.tbl-title {
+font-size: 0.875rem;
+}
+
+.tbl-detail {
+padding: 24px;
+box-shadow: inset 0 1px 3px #dbdbdb;
+background: hsl(213, 20%, 99%);
+}
+
+.detail-label {
+margin: 1.25rem 0 0.25rem;
+font-size: 0.875rem;
+color: rgba(0, 0, 0, 0.6);
+}
+
+.detail-title {
+margin-bottom: 1rem;
+font-size: 1.25rem;
+font-weight: 600;
+}
+
+.detail-description {
+font-size: 0.875rem;
+}
+#VACANCY_LAST_UPDATE #VACANCY_SRVC_UNDER36 #VACANCY_SRVC_30MOS_5YRS 
+#VACANCY_SRVC_LICPRE #VACANCY_SRVC_OOS_GR1_AGE12 {
+height:25px !important;
+}
+```
 
 ```{r filters}
-#| panel: sidebar
 htmltools::div(
   id = "filterdiv",
   crosstalk::filter_slider(
@@ -196,13 +198,13 @@ htmltools::div(
   h4('Certifications'),
   filter_checkbox(
     "ECE_CERTIFICATION_YN", 
-    "", 
+    NULL, 
     shared_data, 
     ~ECE_CERTIFICATION_YN
   ),
   filter_checkbox(
     "ELF_PROGRAMMING_YN", 
-    "", 
+    NULL, 
     shared_data, 
     ~ELF_PROGRAMMING_YN
   ),
@@ -276,7 +278,7 @@ htmltools::div(
 
 # Vacancies Map
 
-## Row {height=30%}
+## Row {height=100px}
 
 Last updated: `{r} .today`
 
@@ -399,7 +401,10 @@ row_details <- function(index, bccc) {
             bccc |>  
               select(contains('LANG_')) |> 
               pivot_longer(everything(), names_to = 'Language', values_to = 'Y/N') |> 
-              mutate(`Y/N` = ifelse(!is.na(`Y/N`), 'Y', 'N'))
+              mutate(
+                Language = str_remove_all(Language, 'LANG_') |> 
+                  str_remove_all('_YN'),
+                `Y/N` = ifelse(!is.na(`Y/N`), 'Y', 'N'))
             ,
             pagination = FALSE,
             defaultColDef = colDef(headerClass = "header"),
@@ -448,8 +453,8 @@ show <- list(
 coldefs <- purrr::list_flatten(list(hide, show))
 
 reactable(
-  #shared_data,
-  tbl_data[1:10,],
+  shared_data,
+  #tbl_data[1:10,],
   defaultSorted = "VACANCY_LAST_UPDATE",
   defaultSortOrder = "desc",
   defaultColDef = colDef(
@@ -458,6 +463,7 @@ reactable(
   onClick = "expand",
   resizable = TRUE,
   columns = coldefs,
-  details = function(index) row_details(index, tbl_data)
+  details = function(index) row_details(index, tbl_data),
+  pagination = FALSE
 )
 ```
