@@ -149,6 +149,20 @@ tbl_data <- bccc |>
   
   select(NAME, everything()) |>
   
+  
+  mutate(
+    popup = glue::glue(
+      "<b>{NAME}</b><br>",
+      "{SERVICE_TYPE_CD}", 
+      "Vacancy:", 
+      "&nbsp;&nbsp;&nbsp;&nbsp;<36 months: {VACANCY_SRVC_UNDER36}",
+      "&nbsp;&nbsp;&nbsp;&nbsp;30 months -- 5 years: {VACANCY_SRVC_30MOS_5YRS}",
+      "&nbsp;&nbsp;&nbsp;&nbsp;Preschool: {VACANCY_SRVC_LICPRE}",
+      "&nbsp;&nbsp;&nbsp;&nbsp;Grade 1 - Age 12: {VACANCY_SRVC_OOS_GR1_AGE12}",
+      .sep = "<br>"
+    )
+  ) |> 
+  
   # crosstalk key
   mutate(id = row_number()) |> 
   
@@ -173,8 +187,9 @@ hide <- tbl_data |>
     ECE_CERTIFICATION_YN,
     ELF_PROGRAMMING_YN,
     IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
+    popup,
     
-    ) |> 
+  ) |> 
   colnames() %>%
   setNames(., .) |> 
   map(
@@ -231,7 +246,28 @@ htmltools::div(
 ) |> htmltools::browsable()
 ```
 
-### Column 
+### Column
+
+#### Map
+
+```{r}
+#| padding: 0px
+shared_data |> 
+  
+  # map
+  leaflet() |>
+  setView(-123.0667922, 49.1797712, zoom = 10) |> 
+  
+  addProviderTiles(providers$CartoDB.Voyager) |>
+  #addProviderTiles(providers$CartoDB.Positron) |>
+  addCircleMarkers(
+    popup = ~popup, label = ~NAME,
+    clusterOptions = markerClusterOptions(),
+    stroke = FALSE, fillOpacity = 0.5
+  )
+```
+
+#### Table
 
 ```{r}
 #| padding: 0px
@@ -301,18 +337,4 @@ reactable(
   columns = coldefs,
   details = function(index) row_details(index, tbl_data)
 )
-```
-
-```{r dev}
-#| eval: FALSE
-#| include: FALSE
-bccc |> 
-  slice(120) |> 
-  # map
-  leaflet() |>
-  
-    addProviderTiles(providers$CartoDB.Voyager) |>
-  #addProviderTiles(providers$CartoDB.Positron) |>
-  addCircleMarkers()
-
 ```
