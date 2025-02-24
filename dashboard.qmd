@@ -3,6 +3,8 @@ title: "BC Child Care Vacancies"
 date: today
 format: 
   dashboard:
+    theme: 
+      - custom.scss
     mainfont: Nunito, sans-serif
     orientation: rows
     scrolling: false
@@ -282,10 +284,9 @@ htmltools::div(
 
 Last updated: `{r} .today`
 
-Every day, new vacancies across BC Child Care facilities will be listed here. 
-BC Childcare Map Data is used to identify and extract facilities with up-to-date vacancy information[^1]. Up-to-date is defined as being vacancy information updated within last 7 days.
+Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
 
-[^1]: I cannot guarantee that the "last updated" information or any other information is accurate. In my experience, some information is not accurate.
+[^1]: This dataset is not guaranteed to have accurate information. Please verify any information from this resource.
 
 ## Row Map
 
@@ -313,7 +314,7 @@ shared_data |>
     #icon = icons
     stroke = FALSE,  fillOpacity = 0.6,
     color = '#303573',
-    radius = 4.5
+    radius = 5
   )
 
 ```
@@ -324,13 +325,13 @@ shared_data |>
 
 ```{r dev}
 #| padding: 0px
-#| eval: false
+#| eval: true
 reactable(bccc[1:10,])
 ```
 
 ```{r}
 #| padding: 0px
-#| eval: true
+#| eval: false
 row_details <- function(index, bccc) {
   bccc <- bccc[index, ] 
   # function that creates class based on colum name
@@ -467,3 +468,9 @@ reactable(
   pagination = FALSE
 )
 ```
+
+# Info
+
+links:
+
+https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39
