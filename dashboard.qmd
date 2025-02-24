@@ -112,81 +112,18 @@ shared_data <- SharedData$new(tbl_data, key = ~id)
 
 # sidebar {.sidebar width="300px"}
 
-
-```{css}
-#filterdiv {
-display:block;
-font-size: 0.9375rem;
-margin-bottom: 0px !important;
-margin-left: 10px;
-margin-right: 10px;
-}
-.crosstalk-input {
-margin-bottom: 0px;
-margin-top: -5px;
-}
-.title {
-font-size: 1.5rem;
-}
-
-.packages-table {
-margin-top: 1rem;
-font-size: 0.9375rem;
-border: 1px solid hsl(213, 33%, 93%);
-border-radius: 4px;
-box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
-}
-
-.header {
-background-color: hsl(213, 45%, 97%);
-border-bottom-color: hsl(213, 33%, 93%);
-border-bottom-width: 1px;
-color: hsl(213, 13%, 33%);
-}
-
-.header[aria-sort]:hover, .header[aria-sort]:focus {
-color: hsl(213, 55%, 50%);
-}
-
-.units {
-margin-left: 0.15em;
-color: rgba(0, 0, 0, 0.6);
-}
-.rt-table {
-font-size: medium;
-}
-.tbl-title {
-font-size: 0.875rem;
-}
-
-.tbl-detail {
-padding: 24px;
-box-shadow: inset 0 1px 3px #dbdbdb;
-background: hsl(213, 20%, 99%);
-}
-
-.detail-label {
-margin: 1.25rem 0 0.25rem;
-font-size: 0.875rem;
-color: rgba(0, 0, 0, 0.6);
-}
-
-.detail-title {
-margin-bottom: 1rem;
-font-size: 1.25rem;
-font-weight: 600;
-}
-
-.detail-description {
-font-size: 0.875rem;
-}
-#VACANCY_LAST_UPDATE #VACANCY_SRVC_UNDER36 #VACANCY_SRVC_30MOS_5YRS 
-#VACANCY_SRVC_LICPRE #VACANCY_SRVC_OOS_GR1_AGE12 {
-height:25px !important;
-}
-```
-
 ```{r filters}
+
+#' when no label, make label space disappear by setting -ve margin
+filter_checkbox_no_label <- function(...) {
+  div(
+    class = "filter-checkbox-no-label",
+    filter_checkbox(
+     ...
+    )
+  )
+}
+
 htmltools::div(
   id = "filterdiv",
   crosstalk::filter_slider(
@@ -198,13 +135,13 @@ htmltools::div(
   filter_select("CITY", "City:", shared_data, ~CITY),
   
   h4('Certifications'),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "ECE_CERTIFICATION_YN", 
     NULL, 
     shared_data, 
     ~ECE_CERTIFICATION_YN
   ),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "ELF_PROGRAMMING_YN", 
     NULL, 
     shared_data, 
@@ -212,25 +149,25 @@ htmltools::div(
   ),
   
   h4('Age'),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "VACANCY_SRVC_UNDER36", 
     "", 
     shared_data, 
     ~VACANCY_SRVC_UNDER36
   ),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "VACANCY_SRVC_30MOS_5YRS", 
     "", 
     shared_data,
     ~VACANCY_SRVC_30MOS_5YRS
   ),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "VACANCY_SRVC_LICPRE", 
     "", 
     shared_data, 
     ~VACANCY_SRVC_LICPRE
   ),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "VACANCY_SRVC_OOS_GR1_AGE12",
     "", 
     shared_data, 
@@ -239,37 +176,37 @@ htmltools::div(
   
   # language filters
   h4('Language'),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "LANG_CANTONESE_YN",
     "", 
     shared_data, 
     ~LANG_CANTONESE_YN
   ),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "LANG_MANDARIN_YN",
     "", 
     shared_data, 
     ~LANG_MANDARIN_YN
   ),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "LANG_PUNJABI_YN",
     "", 
     shared_data, 
     ~LANG_PUNJABI_YN
   ),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "LANG_FRENCH_YN",
     "", 
     shared_data, 
     ~LANG_FRENCH_YN
   ),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "LANG_SPANISH_YN",
     "", 
     shared_data, 
     ~LANG_SPANISH_YN
   ),
-  filter_checkbox(
+  filter_checkbox_no_label(
     "LANG_OTHER_YN",
     "", 
     shared_data, 
@@ -280,7 +217,7 @@ htmltools::div(
 
 # Vacancies Map
 
-## Row {height=100px}
+## Row
 
 Last updated: `{r} .today`
 
@@ -325,13 +262,13 @@ shared_data |>
 
 ```{r dev}
 #| padding: 0px
-#| eval: true
+#| eval: false
 reactable(bccc[1:10,])
 ```
 
 ```{r}
 #| padding: 0px
-#| eval: false
+#| eval: true
 row_details <- function(index, bccc) {
   bccc <- bccc[index, ] 
   # function that creates class based on colum name
@@ -473,4 +410,4 @@ reactable(
 
 links:
 
-https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39
+- [BC Child Care Map Data](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39)

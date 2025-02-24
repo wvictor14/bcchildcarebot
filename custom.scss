@@ -3,3 +3,85 @@ $p-font-size:          0.8rem !default;
 $span-font-size:          0.8rem !default;
 $font-size-root: 12px !default;
 $headings-font-weight:  500 !default;
+
+/*-- filter controls  --*/
+.filter-checkbox-no-label {
+  margin-bottom: 0px;
+  margin-top: -40px;
+}
+.crosstalk-input {
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+
+#filterdiv {
+display:block;
+font-size: 0.9375rem;
+margin-bottom: 0px !important;
+margin-left: 10px;
+margin-right: 10px;
+}
+#filterdiv h4 {
+  margin-bottom: 1.5rem;
+}
+
+/*-- the rest of the dashboard --*/
+.title {
+font-size: 1.5rem;
+}
+
+.packages-table {
+margin-top: 1rem;
+font-size: 0.9375rem;
+border: 1px solid hsl(213, 33%, 93%);
+border-radius: 4px;
+box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+}
+
+.header {
+background-color: hsl(213, 45%, 97%);
+border-bottom-color: hsl(213, 33%, 93%);
+border-bottom-width: 1px;
+color: hsl(213, 13%, 33%);
+}
+
+.header[aria-sort]:hover, .header[aria-sort]:focus {
+color: hsl(213, 55%, 50%);
+}
+
+.units {
+margin-left: 0.15em;
+color: rgba(0, 0, 0, 0.6);
+}
+.rt-table {
+font-size: medium;
+}
+.tbl-title {
+font-size: 0.875rem;
+}
+
+.tbl-detail {
+padding: 24px;
+box-shadow: inset 0 1px 3px #dbdbdb;
+background: hsl(213, 20%, 99%);
+}
+
+.detail-label {
+margin: 1.25rem 0 0.25rem;
+font-size: 0.875rem;
+color: rgba(0, 0, 0, 0.6);
+}
+
+.detail-title {
+margin-bottom: 1rem;
+font-size: 1.25rem;
+font-weight: 600;
+}
+
+.detail-description {
+font-size: 0.875rem;
+}
+#VACANCY_LAST_UPDATE #VACANCY_SRVC_UNDER36 #VACANCY_SRVC_30MOS_5YRS 
+#VACANCY_SRVC_LICPRE #VACANCY_SRVC_OOS_GR1_AGE12 {
+height:25px !important;
+}
