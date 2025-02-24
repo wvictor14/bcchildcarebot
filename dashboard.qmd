@@ -69,9 +69,10 @@ tbl_data <- bccc |>
   
   mutate(
     popup = glue::glue(
-      "<b>{NAME}</b><br>",
+      "<b>{NAME}</b>",
       "{SERVICE_TYPE_CD}", 
-      "Vacancy:", 
+      "{PHONE}",
+      "<br>Vacancy:", 
       "&nbsp;&nbsp;&nbsp;&nbsp;<36 months: {VACANCY_SRVC_UNDER36}",
       "&nbsp;&nbsp;&nbsp;&nbsp;30 months -- 5 years: {VACANCY_SRVC_30MOS_5YRS}",
       "&nbsp;&nbsp;&nbsp;&nbsp;Preschool: {VACANCY_SRVC_LICPRE}",
@@ -119,7 +120,7 @@ filter_checkbox_no_label <- function(...) {
   div(
     class = "filter-checkbox-no-label",
     filter_checkbox(
-     ...
+      ...
     )
   )
 }
@@ -236,6 +237,12 @@ icons <- awesomeIcons(
   library = 'glyphicon'
 )
 
+service_levels <- bccc$SERVICE_TYPE_CD |>  unique() |> sort()
+pal <- colorFactor(
+  c("navy", "firebrick", "orange"), 
+  domain = service_levels
+)
+
 shared_data |> 
   
   # map
@@ -250,8 +257,14 @@ shared_data |>
     #usterOptions = markerClusterOptions(),
     #icon = icons
     stroke = FALSE,  fillOpacity = 0.6,
-    color = '#303573',
+    color = ~pal(SERVICE_TYPE_CD),
     radius = 5
+  ) |> 
+  addLegend(
+    "bottomright", pal = pal, 
+    values = ~SERVICE_TYPE_CD,
+    title = "Childcare type",
+    opacity = 1
   )
 
 ```
