@@ -252,10 +252,9 @@ htmltools::div(
 
 ```{js}
 function filter_default() {
-document.getElementById("CITY").getElementsByClassName("selectized") 
-[0].selectize.setValue(["Richmond"], true);
+  document.getElementById("CITY").getElementsByClassName("selectized")[0].selectize.setValue("Richmond", false);
 }
-window.onload = filter_default;
+$(document).ready(filter_default);
 ```
 
 # Vacancies Map
