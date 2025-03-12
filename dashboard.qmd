@@ -435,6 +435,4 @@ reactable(
 
 # Info
 
-links:
-
-- [BC Child Care Map Data](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39)
+Data is downloaded every day from the BC government [BC Data Catalogue](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39). However, the government does not necessarily update the dataset every day. This data also powers the [Child Care Map](https://maps.gov.bc.ca/ess/hm/ccf/), which the BC government maintains.
