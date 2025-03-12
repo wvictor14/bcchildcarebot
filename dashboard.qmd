@@ -115,7 +115,8 @@ tbl_data <- bccc |>
       value == '30MOS_5YRS' ~ "30 months - 5 years",
       value == 'UNDER36' ~ '<36 months',
       value == 'LICPRE' ~ 'Licensed Pre-schoold',
-      value == 'OOS_GR1_AGE12' ~ 'Grade 1 - Age 12'
+      value == 'OOS_GR1_AGE12' ~ 'Grade 1 - Age 12',
+      .default = value
     )
   ) |>
   pivot_wider(names_from = name, values_from = value) 
