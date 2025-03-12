@@ -228,6 +228,14 @@ htmltools::div(
 ) |>  htmltools::browsable()
 ```
 
+```{js}
+function filter_default() {
+document.getElementById("CITY").getElementsByClassName("selectized") 
+[0].selectize.setValue(["Richmond"], true);
+}
+window.onload = filter_default;
+```
+
 # Vacancies Map
 
 ## Row
