@@ -126,7 +126,6 @@ shared_data <- SharedData$new(tbl_data, key = ~id)
 # sidebar {.sidebar width="300px"}
 
 ```{r filters}
-
 #' when no label, make label space disappear by setting -ve margin
 filter_checkbox_no_label <- function(...) {
   div(
@@ -139,13 +138,16 @@ filter_checkbox_no_label <- function(...) {
 
 htmltools::div(
   id = "filterdiv",
+  h3("Filter facilities"),
   crosstalk::filter_slider(
     "VACANCY_LAST_UPDATE", 
-    "Last updated:", 
+    tippy::tippy(
+      h4("Vacancy Information Last Updated:"), 
+      "Filter to facilities that have been updated from between these two dates"), 
     shared_data, 
     ~VACANCY_LAST_UPDATE
   ),
-  filter_select("CITY", "City:", shared_data, ~CITY),
+  filter_select("CITY", h4("City:"), shared_data, ~CITY),
   
   h4('Certifications'),
   filter_checkbox_no_label(
@@ -161,7 +163,10 @@ htmltools::div(
     ~ELF_PROGRAMMING_YN
   ),
   
-  h4('Age'),
+  tippy::tippy(
+    h4('Filter to facilities with vacancies in specific age group:'),
+    "If all are left unchecked, will show all facilities, regardless of vacancy status"
+  ),
   filter_checkbox_no_label(
     "VACANCY_SRVC_UNDER36", 
     "", 
@@ -188,7 +193,10 @@ htmltools::div(
   ),
   
   # language filters
-  h4('Language'),
+  tippy::tippy(
+    h4('Filter to facilities with that provide service in other languages'),
+    "This information is often inaccurate"
+  ),
   filter_checkbox_no_label(
     "LANG_CANTONESE_YN",
     "", 
