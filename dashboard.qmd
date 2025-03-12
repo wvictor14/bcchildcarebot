@@ -232,7 +232,9 @@ htmltools::div(
 
 ## Row
 
-Last updated: `{r} .today`
+Last date that dataset has been checked: `{r} .today`
+
+Last date that BC updated dataset: `{r} dataset_last_update`
 
 Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
 
