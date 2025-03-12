@@ -162,6 +162,19 @@ htmltools::div(
     shared_data, 
     ~ELF_PROGRAMMING_YN
   ),
+  filter_checkbox_no_label(
+    "IS_CCFRI_AUTH", 
+    NULL, 
+    shared_data, 
+    ~IS_CCFRI_AUTH
+  ),
+  filter_checkbox_no_label(
+    "IS_INCOMPLETE_IND", 
+    NULL, 
+    shared_data, 
+    ~IS_INCOMPLETE_IND
+  ),
+  
   
   tippy::tippy(
     h4('Filter to facilities with vacancies in specific age group:'),
