@@ -28,6 +28,7 @@ library(reactable)
 library(htmltools)
 library(crosstalk)
 library(leaflet)
+library(tippy)
 ```
 
 ```{r load_data}
@@ -41,12 +42,14 @@ bccc <- readr::read_csv(url)
 
 ```{r setup_tbl_data}
 #| include: false
-# filter and clean
+# latest vacancy update
+dataset_last_update <- max(bccc$VACANCY_LAST_UPDATE, na.rm = TRUE)
+
 tbl_data <- bccc |>
   
-  # filter to yesterday + 7 days, and group of interest
+  # filter to last vacancy update - 14 days
   filter(
-    VACANCY_LAST_UPDATE >= .today -1 -7
+    VACANCY_LAST_UPDATE >= dataset_last_update -1 -7
   )  |> 
   
   # filter columns
