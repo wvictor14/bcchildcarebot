@@ -322,7 +322,7 @@ shared_data |>
 reactable(bccc[1:10,])
 ```
 
-```{r}
+```{r render_reactable}
 #| padding: 0px
 #| eval: true
 row_details <- function(index, bccc) {
