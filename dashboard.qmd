@@ -28,6 +28,7 @@ library(reactable)
 library(htmltools)
 library(crosstalk)
 library(leaflet)
+library(tippy)
 ```
 
 ```{r load_data}
@@ -41,12 +42,14 @@ bccc <- readr::read_csv(url)
 
 ```{r setup_tbl_data}
 #| include: false
-# filter and clean
+# latest vacancy update
+dataset_last_update <- max(bccc$VACANCY_LAST_UPDATE, na.rm = TRUE)
+
 tbl_data <- bccc |>
   
-  # filter to yesterday + 7 days, and group of interest
+  # filter to last vacancy update - 14 days
   filter(
-    VACANCY_LAST_UPDATE >= .today -1 -7
+    VACANCY_LAST_UPDATE >= dataset_last_update -1 -7
   )  |> 
   
   # filter columns
@@ -93,19 +96,29 @@ tbl_data <- bccc |>
       contains('VACANCY_SRVC_'), 
       contains('LANG_'),
       ECE_CERTIFICATION_YN,
-      ELF_PROGRAMMING_YN
+      ELF_PROGRAMMING_YN,
+      IS_CCFRI_AUTH,
+      IS_INCOMPLETE_IND
     ),
     names_to = 'name',
     values_to = 'value'
   ) |> 
-  mutate(value = ifelse(
-    value == 'Y', 
-    str_remove_all(name, '^VACANCY_SRVC_') |> 
-      str_remove_all('^LANG_') |> 
-      str_remove_all('_YN$'),
-    
-    NA
-  )) |>
+  mutate(
+    value = ifelse(
+      value == 'Y', 
+      str_remove_all(name, '^VACANCY_SRVC_') |> 
+        str_remove_all('^LANG_') |> 
+        str_remove_all('_YN$'),
+      NA
+    ),
+    value = case_when(
+      value == '30MOS_5YRS' ~ "30 months - 5 years",
+      value == 'UNDER36' ~ '<36 months',
+      value == 'LICPRE' ~ 'Licensed Pre-schoold',
+      value == 'OOS_GR1_AGE12' ~ 'Grade 1 - Age 12',
+      .default = value
+    )
+  ) |>
   pivot_wider(names_from = name, values_from = value) 
 
 shared_data <- SharedData$new(tbl_data, key = ~id)
@@ -114,7 +127,6 @@ shared_data <- SharedData$new(tbl_data, key = ~id)
 # sidebar {.sidebar width="300px"}
 
 ```{r filters}
-
 #' when no label, make label space disappear by setting -ve margin
 filter_checkbox_no_label <- function(...) {
   div(
@@ -127,13 +139,16 @@ filter_checkbox_no_label <- function(...) {
 
 htmltools::div(
   id = "filterdiv",
+  h3("Filter facilities"),
   crosstalk::filter_slider(
     "VACANCY_LAST_UPDATE", 
-    "Last updated:", 
+    tippy::tippy(
+      h4("Vacancy Information Last Updated:"), 
+      "Filter to facilities that have been updated from between these two dates"), 
     shared_data, 
     ~VACANCY_LAST_UPDATE
   ),
-  filter_select("CITY", "City:", shared_data, ~CITY),
+  filter_select("CITY", h4("City:"), shared_data, ~CITY),
   
   h4('Certifications'),
   filter_checkbox_no_label(
@@ -148,8 +163,24 @@ htmltools::div(
     shared_data, 
     ~ELF_PROGRAMMING_YN
   ),
+  filter_checkbox_no_label(
+    "IS_CCFRI_AUTH", 
+    NULL, 
+    shared_data, 
+    ~IS_CCFRI_AUTH
+  ),
+  filter_checkbox_no_label(
+    "IS_INCOMPLETE_IND", 
+    NULL, 
+    shared_data, 
+    ~IS_INCOMPLETE_IND
+  ),
   
-  h4('Age'),
+  
+  tippy::tippy(
+    h4('Filter to facilities with vacancies in specific age group:'),
+    "If all are left unchecked, will show all facilities, regardless of vacancy status"
+  ),
   filter_checkbox_no_label(
     "VACANCY_SRVC_UNDER36", 
     "", 
@@ -176,7 +207,10 @@ htmltools::div(
   ),
   
   # language filters
-  h4('Language'),
+  tippy::tippy(
+    h4('Filter to facilities with that provide service in other languages'),
+    "This information is often inaccurate"
+  ),
   filter_checkbox_no_label(
     "LANG_CANTONESE_YN",
     "", 
@@ -216,11 +250,20 @@ htmltools::div(
 ) |>  htmltools::browsable()
 ```
 
+```{js}
+function filter_default() {
+  document.getElementById("CITY").getElementsByClassName("selectized")[0].selectize.setValue("Richmond", false);
+}
+$(document).ready(filter_default);
+```
+
 # Vacancies Map
 
 ## Row
 
-Last updated: `{r} .today`
+Last date that dataset has been checked: `{r} .today`
+
+Last date that BC updated dataset: `{r} dataset_last_update`
 
 Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
 
@@ -279,7 +322,7 @@ shared_data |>
 reactable(bccc[1:10,])
 ```
 
-```{r}
+```{r render_reactable}
 #| padding: 0px
 #| eval: true
 row_details <- function(index, bccc) {
@@ -421,6 +464,4 @@ reactable(
 
 # Info
 
-links:
-
-- [BC Child Care Map Data](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39)
+Data is downloaded every day from the BC government [BC Data Catalogue](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39). However, the government does not necessarily update the dataset every day. This data also powers the [Child Care Map](https://maps.gov.bc.ca/ess/hm/ccf/), which the BC government maintains.
