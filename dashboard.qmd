@@ -113,8 +113,8 @@ tbl_data <- bccc |>
     ),
     value = case_when(
       value == '30MOS_5YRS' ~ "30 months - 5 years",
-      value == 'UNDER36' ~ '<36 months',
-      value == 'LICPRE' ~ 'Licensed Pre-schoold',
+      value == 'UNDER36' ~ 'Under 36 months',
+      value == 'LICPRE' ~ 'Licensed Pre-school',
       value == 'OOS_GR1_AGE12' ~ 'Grade 1 - Age 12',
       .default = value
     )
@@ -252,7 +252,7 @@ htmltools::div(
 
 ```{js}
 function filter_default() {
-  document.getElementById("CITY").getElementsByClassName("selectized")[0].selectize.setValue("Richmond", false);
+  document.getElementById("CITY").getElementsByClassName("selectized")[0].selectize.setValue(["Richmond", "Vancouver", "Burnaby"], false);
 }
 $(document).ready(filter_default);
 ```
@@ -261,7 +261,7 @@ $(document).ready(filter_default);
 
 ## Row
 
-Last date that dataset has been checked: `{r} .today`
+Last date that this page has been updated: `{r} .today`
 
 Last date that BC updated dataset: `{r} dataset_last_update`
 
@@ -290,7 +290,7 @@ shared_data |>
   
   # map
   leaflet() |>
-  setView(-123.0667922, 52, zoom = 5) |> 
+  setView(-123.04591, 49.25, zoom = 11) |> 
   
   addProviderTiles(providers$CartoDB.Voyager) |>
   #providers$CartoDB.Positron
@@ -458,7 +458,13 @@ reactable(
   resizable = TRUE,
   columns = coldefs,
   details = function(index) row_details(index, tbl_data),
-  pagination = FALSE
+  pagination = FALSE,
+  searchable = TRUE,
+  theme = reactableTheme(
+    searchInputStyle = list(
+      width = '100%'
+    )
+  )
 )
 ```
 
