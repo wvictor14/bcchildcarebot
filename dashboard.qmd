@@ -5,7 +5,6 @@ format:
   dashboard:
     theme: 
       - custom.scss
-    mainfont: Nunito, sans-serif
     orientation: rows
     scrolling: false
     embed-resources: true
@@ -49,7 +48,7 @@ tbl_data <- bccc |>
   
   # filter to last vacancy update - 14 days
   filter(
-    VACANCY_LAST_UPDATE >= dataset_last_update -1 -7
+    VACANCY_LAST_UPDATE >= dataset_last_update -1 -2
   )  |> 
   
   # filter columns
@@ -112,6 +111,10 @@ tbl_data <- bccc |>
       NA
     ),
     value = case_when(
+      value == 'ECE_CERTIFICATION' ~ 'Early Childhood Educator (ECE)',
+      value == 'ELF_PROGRAMMING' ~ 'ELF',
+      value == 'IS_CCFRI_AUTH' ~ 'CCFRI authorized',
+      
       value == '30MOS_5YRS' ~ "30 months - 5 years",
       value == 'UNDER36' ~ 'Under 36 months',
       value == 'LICPRE' ~ 'Licensed Pre-school',
@@ -144,7 +147,8 @@ htmltools::div(
     "VACANCY_LAST_UPDATE", 
     tippy::tippy(
       h4("Vacancy Information Last Updated:"), 
-      "Filter to facilities that have been updated from between these two dates"), 
+      "Filter to facilities that have been updated from between these two dates",
+      placement = 'right'), 
     shared_data, 
     ~VACANCY_LAST_UPDATE
   ),
@@ -179,7 +183,8 @@ htmltools::div(
   
   tippy::tippy(
     h4('Filter to facilities with vacancies in specific age group:'),
-    "If all are left unchecked, will show all facilities, regardless of vacancy status"
+    "If all are left unchecked, will show all facilities, regardless of vacancy status",
+    placement = 'right'
   ),
   filter_checkbox_no_label(
     "VACANCY_SRVC_UNDER36", 
@@ -209,7 +214,8 @@ htmltools::div(
   # language filters
   tippy::tippy(
     h4('Filter to facilities with that provide service in other languages'),
-    "This information is often inaccurate"
+    "This information is often inaccurate",
+    placement = 'right'
   ),
   filter_checkbox_no_label(
     "LANG_CANTONESE_YN",
