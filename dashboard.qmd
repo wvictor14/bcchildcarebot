@@ -48,7 +48,7 @@ tbl_data <- bccc |>
   
   # filter to last vacancy update - 14 days
   filter(
-    VACANCY_LAST_UPDATE >= dataset_last_update -1 -2
+    VACANCY_LAST_UPDATE >= dataset_last_update -1 -7
   )  |> 
   
   # filter columns
