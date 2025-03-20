@@ -477,3 +477,7 @@ reactable(
 # Info
 
 Data is downloaded every day from the BC government [BC Data Catalogue](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39). However, the government does not necessarily update the dataset every day. This data also powers the [Child Care Map](https://maps.gov.bc.ca/ess/hm/ccf/), which the BC government maintains.
+
+It is well known that childcare is crazy in Vancouver. Personally, we experienced so many challenges in finding good childcare facilities with vacancies in Vancouver. So I built this childcare facility tool to help myself find childcare for my son. In my experience using this app we were able to very quickly find a nice childcare facility near our home that had vacancies. Maybe when he ages out into the next age group, I will update the app with more features.
+
+I also used this experience to develop my professional development through learning how to build and deploy static html dashboards using quarto and github actions. It was a fun project and I learned several new tools.
