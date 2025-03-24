@@ -17,8 +17,7 @@ format:
         href: https://victoryuan.com/
     include-in-header: 
       - text: |
-          <script data-goatcounter="https://victor2wy.goatcounter.com/count" 
-          async src="//gc.zgo.at/count.js"></script>
+          <script data-goatcounter="https://victor2wy.goatcounter.com/count"    async src="//gc.zgo.at/count.js"></script>
 editor_options: 
   chunk_output_type: console
 ---
