@@ -15,6 +15,10 @@ format:
         href: https://botsin.space/@bcchildcarebot
       - icon: house-fill
         href: https://victoryuan.com/
+    include-in-header: 
+      - text: |
+          <script data-goatcounter="https://victoryuan.goatcounter.com/count" 
+          async src="//gc.zgo.at/count.js"></script>
 editor_options: 
   chunk_output_type: console
 ---
