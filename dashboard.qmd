@@ -467,6 +467,11 @@ reactable(
       width = '100%'
     )
   )
+) |> 
+  bslib::card(
+    height = '600px',
+    full_screen = TRUE,
+    style = "resize:vertical;"
 )
 ```
 
