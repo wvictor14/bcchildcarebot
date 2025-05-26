@@ -14,8 +14,8 @@ format:
         href: https://victoryuan.com/
     include-in-header: 
       - text: |
-            <script data-goatcounter="https://victor2wy.goatcounter.com/count"
-              async src="//gc.zgo.at/count.js"></script>
+          <script data-goatcounter="https://victor2wy.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
 editor_options: 
   chunk_output_type: console
 execute:
@@ -51,7 +51,7 @@ tbl_data <- bccc |>
   
   # filter to last vacancy update - 14 days
   filter(
-    VACANCY_LAST_UPDATE >= dataset_last_update -1 - 2
+    VACANCY_LAST_UPDATE >= dataset_last_update -1 -7
   )  |> 
   
   # filter columns
@@ -274,7 +274,7 @@ htmltools::div(
 
 ```{js}
 function filter_default() {
-document.getElementById("CITY").getElementsByClassName("selectized")[0].selectize.setValue(["Richmond", "Vancouver", "Burnaby"], false);
+  document.getElementById("CITY").getElementsByClassName("selectized")[0].selectize.setValue(["Richmond", "Vancouver", "Burnaby"], false);
 }
 $(document).ready(filter_default);
 ```
@@ -471,7 +471,7 @@ reactable(
     height = '600px',
     full_screen = TRUE,
     style = "resize:vertical;"
-  )
+)
 ```
 
 # Info
