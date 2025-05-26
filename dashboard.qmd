@@ -131,7 +131,17 @@ tbl_data <- bccc |>
 shared_data <- SharedData$new(tbl_data, key = ~id)
 ```
 
-# sidebar {.sidebar width="300px"}
+# Info {.hidden}
+
+Last date that this page has been updated: `{r} .today`
+
+Last date that BC updated dataset: `{r} dataset_last_update`
+
+Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
+
+[^1]: This dataset is not guaranteed to have accurate information. Please verify any information from this resource.
+
+# Filter Facilities
 
 ```{r filters}
 #' when no label, make label space disappear by setting -ve margin
@@ -143,10 +153,13 @@ filter_checkbox_no_label <- function(...) {
     )
   )
 }
+```
 
+```{r}
+#| panel: input
 htmltools::div(
   id = "filterdiv",
-  h3("Filter facilities"),
+  #h3("Filter facilities"),
   crosstalk::filter_slider(
     "VACANCY_LAST_UPDATE", 
     tippy::tippy(
@@ -267,23 +280,9 @@ function filter_default() {
 $(document).ready(filter_default);
 ```
 
-# Vacancies Map
-
-## Row
-
-Last date that this page has been updated: `{r} .today`
-
-Last date that BC updated dataset: `{r} dataset_last_update`
-
-Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
-
-[^1]: This dataset is not guaranteed to have accurate information. Please verify any information from this resource.
-
-## Row Map
+# Map
 
 ```{r}
-#| padding: 0px
-
 icons <- awesomeIcons(
   icon = 'home',
   iconColor = 'black',
