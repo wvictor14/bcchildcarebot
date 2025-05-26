@@ -2,3 +2,6 @@
 .Rproj.user
 *.Rproj
 *.html
+dashboard_files
+dashboard.rmarkdown
+temp*
