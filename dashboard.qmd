@@ -2,12 +2,9 @@
 title: "BC Child Care Vacancies"
 date: today
 format: 
-  dashboard:
+  html:
     theme: 
       - custom.scss
-    orientation: rows
-    scrolling: false
-    embed-resources: false
     nav-buttons: 
       - icon: github
         href: https://github.com/wvictor14/bcchildcarebot
@@ -21,6 +18,8 @@ format:
             async src="//gc.zgo.at/count.js"></script>
 editor_options: 
   chunk_output_type: console
+execute:
+  echo: false
 ---
 
 ```{r load_libraries}
