@@ -323,17 +323,10 @@ shared_data |>
 
 # Table 
 
-## Row
-
-```{r dev}
-#| padding: 0px
-#| eval: false
-reactable(bccc[1:10,])
-```
-
 ```{r render_reactable}
 #| padding: 0px
 #| eval: true
+#| column: page
 row_details <- function(index, bccc) {
   bccc <- bccc[index, ] 
   # function that creates class based on colum name
