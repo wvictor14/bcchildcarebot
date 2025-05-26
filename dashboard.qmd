@@ -31,6 +31,7 @@ library(htmltools)
 library(crosstalk)
 library(leaflet)
 library(tippy)
+library(bslib)
 ```
 
 ```{r load_data}
