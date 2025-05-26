@@ -7,7 +7,7 @@ format:
       - custom.scss
     orientation: rows
     scrolling: false
-    embed-resources: true
+    embed-resources: false
     nav-buttons: 
       - icon: github
         href: https://github.com/wvictor14/bcchildcarebot
@@ -19,7 +19,6 @@ format:
       - text: |
           <script data-goatcounter="https://victor2wy.goatcounter.com/count"
             async src="//gc.zgo.at/count.js"></script>
-          <script data-goatcounter="https://victor2wy.goatcounter.com/count">0</script>
 editor_options: 
   chunk_output_type: console
 ---
