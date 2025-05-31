@@ -69,15 +69,51 @@ Every day, new vacancies across BC Child Care facilities will be pull from the B
 div(
   class = "filters",
   search_filter("filter_name", "Search by Facility Name", shared_data, "NAME"),
-  select_filter("filter_vacancy", "Vacancy", shared_data, "VACANCY"),
-  range_filter("filter_last_updated", "Last Updated", shared_data, "VACANCY_LAST_UPDATE")
+  select_filter("filter_city", "City", shared_data, "CITY"),
+  select_filter("filter_vacancy", "Vacancy", shared_data, "VACANCY")
+)
+```
+
+# Table 
+
+```{r render_reactable}
+#| padding: 0px
+#| eval: true
+# columns to hide from unested view
+coldefs <- create_coldefs(tbl_data)
+reactable(
+  shared_data,
+  #tbl_data[1:10,],
+  defaultSorted = "VACANCY_LAST_UPDATE",
+  defaultSortOrder = "desc",
+  defaultColDef = colDef(
+    # show = FALSE,
+    headerClass = "header", align = "left"),
+  onClick = "expand",
+  resizable = TRUE,
+  columns = coldefs,
+  #details = function(index) row_details(index, tbl_data),
+  details = JS('renderRowDetails'),
+  pagination = FALSE,
+  searchable = FALSE,
+  theme = reactableTheme(
+    searchInputStyle = list(
+      width = '100%'
+    )
+  )
+) |> 
+  bslib::card(
+    height = '600px',
+    full_screen = TRUE,
+    style = "resize:vertical;"
 )
 ```
 
 # Map
 
-```{r}
+```{r leaftlet_map}
 #| column: screen
+#| message: false
 icons <- awesomeIcons(
   icon = 'home',
   iconColor = 'black',
@@ -116,44 +152,6 @@ map <- shared_data |>
 map
 ```
 
-# Table 
-
-```{r render_reactable}
-#| padding: 0px
-#| eval: true
-# columns to hide from unested view
-coldefs <- create_coldefs()
-reactable(
-  shared_data,
-  #tbl_data[1:10,],
-  defaultSorted = "VACANCY_LAST_UPDATE",
-  defaultSortOrder = "desc",
-  defaultColDef = colDef(
-    # show = FALSE,
-    headerClass = "header", align = "left"),
-  onClick = "expand",
-  resizable = TRUE,
-  columns = coldefs,
-  details = function(index) row_details(index, tbl_data),
-  pagination = FALSE,
-  searchable = TRUE,
-  theme = reactableTheme(
-    searchInputStyle = list(
-      width = '100%'
-    )
-  )
-) |> 
-  bslib::card(
-    height = '600px',
-    full_screen = TRUE,
-    style = "resize:vertical;"
-)
-```
-
 # Info
 
 Data is downloaded every day from the BC government [BC Data Catalogue](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39). However, the government does not necessarily update the dataset every day. This data also powers the [Child Care Map](https://maps.gov.bc.ca/ess/hm/ccf/), which the BC government maintains.
-
-It is well known that childcare is crazy in Vancouver. Personally, we experienced so many challenges in finding good childcare facilities with vacancies in Vancouver. So I built this childcare facility tool to help myself find childcare for my son. In my experience using this app we were able to very quickly find a nice childcare facility near our home that had vacancies. Maybe when he ages out into the next age group, I will update the app with more features.
-
-I also used this experience to develop my professional development through learning how to build and deploy static html dashboards using quarto and github actions. It was a fun project and I learned several new tools.
