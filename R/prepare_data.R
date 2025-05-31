@@ -74,5 +74,16 @@ prepare_data <- function(x) {
     ) |>
     pivot_wider(names_from = name, values_from = value) 
   
+  # add vacancy data into 1 column
+  # list column where each list-element is a vector of the age groups a facility
+  # has vacancies for
+  tbl_data <- tbl_data |> 
+    rowwise() |>
+    mutate(VACANCY = list(c(
+      c_across(contains('VACANCY_SRVC')) |> 
+        na.omit()
+    ))) |> 
+    ungroup()
+    
   return(tbl_data)
 }
