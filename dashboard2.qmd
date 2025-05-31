@@ -1,7 +1,7 @@
 ---
 title: "BC Child Care Vacancies"
 date: today
-format: 
+format:
   html:
     theme: 
       - custom2.scss
@@ -10,6 +10,9 @@ format:
         href: https://github.com/wvictor14/bcchildcarebot
       - icon: house-fill
         href: https://victoryuan.com/
+    include-in-header:
+        - text: |
+            <script src="reactable_row_details.js"></script>
 editor_options: 
   chunk_output_type: console
 execute:
