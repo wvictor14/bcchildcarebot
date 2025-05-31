@@ -5,3 +5,4 @@
 dashboard_files
 dashboard.rmarkdown
 temp*
+*_files/*
