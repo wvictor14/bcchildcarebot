@@ -96,7 +96,10 @@ reactable(
   resizable = TRUE,
   columns = coldefs,
   #details = function(index) row_details(index, tbl_data),
+  details = colDef(
   details = JS('renderRowDetails'),
+    html = TRUE,
+  ),
   pagination = FALSE,
   searchable = FALSE,
   theme = reactableTheme(
