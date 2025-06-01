@@ -52,7 +52,8 @@ tbl_data <- bccc |>
   prepare_data() |> 
   
   # filter to last vacancy update - 14 days
-  filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 -3) 
+  filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 -3) |> 
+  arrange(desc(VACANCY_LAST_UPDATE))
 shared_data <- SharedData$new(tbl_data, key = ~id)
 ```
 
@@ -72,8 +73,10 @@ Every day, new vacancies across BC Child Care facilities will be pull from the B
 div(
   class = "filters",
   search_filter("filter_name", "Search by Facility Name", shared_data, "NAME"),
-  select_filter("filter_city", "City", shared_data, "CITY"),
-  select_filter("filter_vacancy", "Vacancy", shared_data, "VACANCY")
+  #select_filter("filter_city", "City", shared_data, "CITY"),
+  filter_select2('filter_city', 'City', shared_data, ~CITY),
+  #select_filter("filter_vacancy", "Vacancy", shared_data, "VACANCY")
+  filter_select2("filter_vacancy", "Vacancy", shared_data, ~VACANCY)
 )
 ```
 
@@ -86,8 +89,6 @@ div(
 coldefs <- create_coldefs(tbl_data)
 reactable(
   shared_data,
-  #tbl_data[1:10,],
-  defaultSorted = "VACANCY_LAST_UPDATE",
   defaultSortOrder = "desc",
   defaultColDef = colDef(
     # show = FALSE,

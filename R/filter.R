@@ -64,7 +64,7 @@ filter_select2 <- function(id, label, sharedData, group, allLevels = FALSE,
                )
              )
     ),
-    c(list(jqueryLib(), selectizeLib()), crosstalkLibs())
+    c(list(crosstalk:::jqueryLib(), crosstalk:::selectizeLib()), crosstalk:::crosstalkLibs())
   ))
 }
 
@@ -82,8 +82,6 @@ makeGroupOptions <- function(sharedData, group, allLevels) {
     stop("Can't form options with zero-length group vector")
   }
   
-  
-  
   lvls <- if (is.factor(group)) {
     if (allLevels) {
       levels(group)
@@ -93,14 +91,34 @@ makeGroupOptions <- function(sharedData, group, allLevels) {
   } else if (!is.list(group)) {
     sort(unique(group))
   } else if (is.list(group)) {
-    browser()
     unlist(group) |> unique() |> sort()
   }
   matches <- match(group, lvls)
-  browser()
-  vals <- lapply(1:length(lvls), function(i) {
-    df$key_[which(matches == i)]
-  })
+  
+  # a list where each element are the KEYs that match the value of the filter
+  # this works for a single element against a list of character vectors
+  # gets the index of y, if an element of y matches/contains x
+  get_ind_where_x_matches_y <- function(x, y) {
+    which(
+      map_lgl(
+        y, 
+        \(y) x %in% y
+      )
+    )
+  }
+  
+  get_index_that_matches <- function(x, y_list) {
+    # handle length 0 elements
+    y_list <- y_list |>  
+      map(\(list_element) ifelse(length(list_element)  == 0, '', list_element))
+    
+    
+    x |> 
+      map(
+        ~get_ind_where_x_matches_y(.x, y_list)
+      )
+  }
+  vals <- get_index_that_matches(lvls, group)
   
   lvls_str <- as.character(lvls)
   
@@ -111,6 +129,28 @@ makeGroupOptions <- function(sharedData, group, allLevels) {
   )
   
   options
+}
+
+jqueryLib <- function() {
+  htmlDependency(
+    name = "jquery",
+    version = "3.5.1",
+    package = "crosstalk",
+    src = "lib/jquery",
+    script = "jquery.min.js"
+  )
+}
+
+
+selectizeLib <- function(bootstrap = TRUE) {
+  htmlDependency(
+    name = "selectize",
+    version = "0.12.4",
+    package = "crosstalk",
+    src = "lib/selectize",
+    stylesheet = if (bootstrap) "css/selectize.bootstrap3.css",
+    script = "js/selectize.min.js"
+  )
 }
 
 #' # Custom Crosstalk search filter. This is a free-form text field that does
