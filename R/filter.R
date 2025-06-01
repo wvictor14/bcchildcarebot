@@ -15,7 +15,6 @@ select_filter <- function(id, label, shared_data, group, choices = NULL,
     keys_by_value <- split(seq_along(keys), values, drop = TRUE)
     choices <- if (is.null(choices)) sort(unique(values)) else choices
   }
-  
   script <- sprintf("
     window['__ct__%s'] = (function() {
       const handle = new window.crosstalk.FilterHandle('%s')
@@ -31,7 +30,6 @@ select_filter <- function(id, label, shared_data, group, choices = NULL,
       }
     })()
   ", id, shared_data$groupName(), toJSON(keys_by_value))
-  
   div(
     class = class,
     tags$label(`for` = id, label),
@@ -44,6 +42,75 @@ select_filter <- function(id, label, shared_data, group, choices = NULL,
     ),
     tags$script(HTML(script))
   )
+}
+
+# modified filter_select to allow list columns input
+filter_select2 <- function(id, label, sharedData, group, allLevels = FALSE,
+                           multiple = TRUE) {
+  
+  options <- makeGroupOptions(sharedData, group, allLevels)
+  htmltools::browsable(attachDependencies(
+    tags$div(id = id, class = "form-group crosstalk-input-select crosstalk-input",
+             tags$label(class = "control-label", `for` = id, label),
+             tags$div(
+               tags$select(
+                 multiple = if (multiple) NA else NULL
+               ),
+               tags$script(type = "application/json",
+                           `data-for` = id,
+                           HTML(
+                             jsonlite::toJSON(options, dataframe = "columns", pretty = TRUE)
+                           )
+               )
+             )
+    ),
+    c(list(jqueryLib(), selectizeLib()), crosstalkLibs())
+  ))
+}
+
+makeGroupOptions <- function(sharedData, group, allLevels) {
+  df <- sharedData$data(
+    withSelection = FALSE,
+    withFilter = FALSE,
+    withKey = TRUE
+  )
+  
+  if (inherits(group, "formula"))
+    group <- lazyeval::f_eval(group, df)
+  
+  if (length(group) < 1) {
+    stop("Can't form options with zero-length group vector")
+  }
+  
+  
+  
+  lvls <- if (is.factor(group)) {
+    if (allLevels) {
+      levels(group)
+    } else {
+      levels(droplevels(group))
+    }
+  } else if (!is.list(group)) {
+    sort(unique(group))
+  } else if (is.list(group)) {
+    browser()
+    unlist(group) |> unique() |> sort()
+  }
+  matches <- match(group, lvls)
+  browser()
+  vals <- lapply(1:length(lvls), function(i) {
+    df$key_[which(matches == i)]
+  })
+  
+  lvls_str <- as.character(lvls)
+  
+  options <- list(
+    items = data.frame(value = lvls_str, label = lvls_str, stringsAsFactors = FALSE),
+    map = setNames(vals, lvls_str),
+    group = sharedData$groupName()
+  )
+  
+  options
 }
 
 #' # Custom Crosstalk search filter. This is a free-form text field that does
