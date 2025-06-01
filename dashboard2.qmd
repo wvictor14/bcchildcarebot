@@ -54,7 +54,7 @@ tbl_data <- bccc |>
   # filter to last vacancy update - 14 days
   filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 -3) |> 
   arrange(desc(VACANCY_LAST_UPDATE))
-shared_data <- SharedData$new(tbl_data, key = ~id)
+shared_data <- SharedData$new(tbl_data)
 ```
 
 # Info
@@ -74,7 +74,7 @@ div(
   class = "filters",
   search_filter("filter_name", "Search by Facility Name", shared_data, "NAME"),
   #select_filter("filter_city", "City", shared_data, "CITY"),
-  filter_select2('filter_city', 'City', shared_data, ~CITY),
+  crosstalk::filter_select('filter_city', 'City', shared_data, ~CITY),
   #select_filter("filter_vacancy", "Vacancy", shared_data, "VACANCY")
   filter_select2("filter_vacancy", "Vacancy", shared_data, ~VACANCY)
 )
