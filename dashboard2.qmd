@@ -57,7 +57,7 @@ tbl_data <- bccc |>
 shared_data <- SharedData$new(tbl_data)
 ```
 
-# Main
+# Main 
 
 ## Filter Facilities {height=15%}
 
@@ -93,7 +93,7 @@ reactable(
     details = JS('renderRowDetails'),
     html = TRUE,
   ),
-  pagination = FALSE,
+  pagination = TRUE,
   searchable = FALSE,
   theme = reactableTheme(
     searchInputStyle = list(
