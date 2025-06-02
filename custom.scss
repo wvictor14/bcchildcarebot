@@ -15,201 +15,65 @@ $theme-colors: (
   dark: #212529, // new entries
 );
 
-//Theme-color function is initizled as it was dropped with version 5 migration
-@function theme-color($color-name){
-  @return map-get($map: $theme-colors, $key: $color-name);
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  margin-left: -32px;
 }
 
-// Add our font as default
-$bcgov-font-path: "fonts";
-$font-family-sans-serif: BCSans, "Noto Sans", Verdana, Arial, sans serif;
-$font-family-base: $font-family-sans-serif;
-$line-height-base: 1.5;
-$body-color: #494949;
-
-// Headings
-$headings-font-weight: 600;
-$headings-line-height: 1.5;
-$headings-margin-bottom: 1.25rem;
-
-// $h1-font-size: 1.874rem;
-// $h2-font-size: 1.34912rem;
-// $h3-font-size: 1.1882rem;
-$h4-font-size: 1rem !default;
-// $h5-font-size: 0.76425rem;
-// $h6-font-size: 0.70345rem;
-
-// Links
-$link-text-decoration: underline;
-$link-color: #1a5a96;
-$link-hover-color: #0631f3;
-$btn-link-outline-color: rgba(theme-color(primary), 0.5);
-
-// Navbar - header and footer
-$header-box-shadow-color: rgba(51, 51, 51, 0.5);
-$nav-link-padding-x: 0.8rem;
-$nav-link-padding-y: 0.4rem;
-$navbar-nav-link-padding-x: 0.8rem;
-$navbar-nav-link-padding-y: 0.4rem;
-$navbar-dark-color: #fff;
-$navbar-dark-toggler-border-color: rgba(255, 255, 255, 0.6);
-$footer-separator-color: #4b5e73;
-$navbar-bg: theme-color(primary-nav);
-$navbar-fg: theme-color(light);
-$navbar-brand-height: 2;
-
-// Table header
-$table-dark-bg: theme-color(primary);
-$table-dark-border-color: theme-color(primary);
-
-// Darker borders
-$gray-300: #dee2e6;
-$gray-400: #ced4da;
-$gray-450: #bdc5cc;
-$gray-500: #adb5bd;
-$alpha-border-color: rgba(black, 0.3);
-$alert-border-level: -7;
-$card-border-color: $alpha-border-color;
-$hr-border-color: $alpha-border-color;
-$border-color: $gray-400;
-$input-border-color: $gray-500;
-$list-group-border-color: $alpha-border-color;
-$nav-tabs-border-color: $gray-500;
-$nav-tabs-link-active-border-color: $gray-500 $gray-500 white;
-$pagination-border-color: $gray-500;
-$pagination-disabled-border-color: $gray-400;
-// $pagination-active-border-color: $pagination-active-bg;
-$table-border-color: $gray-450;
-$table-border-level: -5;
-
-// Clearer hover states
-$control-link-color: white;
-$control-link-bg: tint-color( theme-color(secondary-nav),10%); // custom var
-$control-link-border-color: tint-color( theme-color(secondary-nav),10%); // custom var
-
-$pagination-active-bg:  theme-color(primary); //new entries
-$pagination-active-border-color: theme-color(primary); //new entries
-$pagination-hover-color: $control-link-color;
-$pagination-hover-bg: $control-link-bg;
-$pagination-hover-border-color: $control-link-border-color;
-$list-group-active-bg: $control-link-bg;
-$list-group-active-border-color: $control-link-border-color;
-$list-group-action-hover-color: $link-hover-color;
-$nav-tabs-link-hover-border-color: $control-link-color $control-link-color
-$nav-tabs-border-color;
-
-$list-group-item-padding-y: 10px; //for navbar spacing
-
-$nav-pills-link-active-bg: theme-color(primary); //new entry for active color on pills w/t dropdowns
-$progress-bar-bg:theme-color(primary); //new entry for progress bars
-
-$font-size-base: 1rem;
-$font-size-root: 12px;
-$font-size-sm: $font-size-base * .875 !default;
-$font-size-lg: $font-size-base * 1.5;
-
-/*-- scss:rules --*/
-.navbar {
-  font-size: 1.5rem;
-  line-height: 2;
-}
-.nav-link-text {
-  font-size: 1.25rem;
-}
-/*-- filter controls  --*/
-.control-label {
-  margin-top: 0px;
-  margin-bottom: 0px;
-}
-.filter-checkbox-no-label {
-  margin-bottom: 0px;
-  margin-top: -30px;
-}
-.crosstalk-input {
-  margin-bottom: 0px;
-  margin-top: 0px;
-}
-
-#filterdiv {
-display:block;
-font-size: 0.8rem;
-margin-bottom: 0px !important;
-margin-left: 10px !important;
-margin-right: 10px !important;
-}
-#filterdiv h4 {
+.filter-input, .crosstalk-input {
   margin-top: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 15px;
+  margin-left: 32px;
+  flex: 1;
+  min-width: 250px;
+  height: 36px;
 }
 
-#VACANCY_LAST_UPDATE {
-  margin-bottom: 0rem;
+.filter-input label, .crosstalk-input label {
+  color: hsl(0, 0%, 45%);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
 }
 
-/*-- 
-#VACANCY_LAST_UPDATE irs {
-  max-width: 240px;
-  padding-left: 20px;
+// copy selectize-input css to make  filter input look the same
+.filter-input select,
+.filter-input input[type="search"],
+.crosstalk-input input {
+  border: 1px solid #cccccc;
+  padding: 6px 12px;
+  display: inline-block;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
 }
---*/
-
-/*-- the rest of the dashboard --*/
-.title {
-font-size: 1.25rem;
-}
-
-.packages-table {
-margin-top: 1rem;
-font-size: 0.9375rem;
-border: 1px solid hsl(213, 33%, 93%);
-border-radius: 4px;
-box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
-}
-
-.header {
-background-color: hsl(213, 45%, 97%);
-border-bottom-color: hsl(213, 33%, 93%);
-border-bottom-width: 1px;
-color: hsl(213, 13%, 33%);
-}
-
-.header[aria-sort]:hover, .header[aria-sort]:focus {
-color: hsl(213, 55%, 50%);
-}
-
-.units {
-margin-left: 0.15em;
-color: rgba(0, 0, 0, 0.6);
-}
-.rt-table {
-font-size: medium;
-}
-.tbl-title {
-font-size: 0.875rem;
-}
-
-.tbl-detail {
-padding: 24px;
-box-shadow: inset 0 1px 3px #dbdbdb;
-background: hsl(213, 20%, 99%);
-}
-
 .detail-label {
 margin: 1.25rem 0 0.25rem;
 font-size: 0.875rem;
 color: rgba(0, 0, 0, 0.6);
 }
 
-.detail-title {
-margin-bottom: 1rem;
-font-size: 1.25rem;
-font-weight: 600;
+// make sure the selectize dropdown is on top of other content
+.card, .card-body, .filters {
+  overflow: visible !important;
+  z-index: auto !important;
+}
+.selectize-dropdown {
+  z-index: 10000 !important; 
 }
 
-.detail-description {
-font-size: 0.875rem;
-}
-#VACANCY_LAST_UPDATE #VACANCY_SRVC_UNDER36 #VACANCY_SRVC_30MOS_5YRS 
-#VACANCY_SRVC_LICPRE #VACANCY_SRVC_OOS_GR1_AGE12 {
-height:25px !important;
+// prevent reactable border from cutting off bs card
+.reactable {
+  border-radius: 0.375rem;
 }
