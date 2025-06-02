@@ -15,14 +15,12 @@ $theme-colors: (
   dark: #212529, // new entries
 );
 
-
 .filters {
   display: flex;
   flex-wrap: wrap;
   margin-top: 1rem;
   margin-left: -32px;
 }
-
 
 .filter-input, .crosstalk-input {
   margin-top: 0.5rem;
@@ -49,7 +47,6 @@ $theme-colors: (
   padding: 6px 12px;
   display: inline-block;
   width: 100%;
-  overflow: hidden;
   position: relative;
   z-index: 1;
   -webkit-box-sizing: border-box;
@@ -67,7 +64,11 @@ font-size: 0.875rem;
 color: rgba(0, 0, 0, 0.6);
 }
 
-
-.rt-td-inner {
-  padding: 0px 0px !important;
+// make sure the selectize dropdown is on top of other content
+.card, .card-body, .filters {
+  overflow: visible !important;
+  z-index: auto !important;
+}
+.selectize-dropdown {
+  z-index: 10000 !important; 
 }
