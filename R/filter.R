@@ -15,7 +15,6 @@ select_filter <- function(id, label, shared_data, group, choices = NULL,
     keys_by_value <- split(seq_along(keys), values, drop = TRUE)
     choices <- if (is.null(choices)) sort(unique(values)) else choices
   }
-  
   script <- sprintf("
     window['__ct__%s'] = (function() {
       const handle = new window.crosstalk.FilterHandle('%s')
@@ -31,7 +30,6 @@ select_filter <- function(id, label, shared_data, group, choices = NULL,
       }
     })()
   ", id, shared_data$groupName(), toJSON(keys_by_value))
-  
   div(
     class = class,
     tags$label(`for` = id, label),
@@ -43,6 +41,115 @@ select_filter <- function(id, label, shared_data, group, choices = NULL,
       lapply(choices, function(value) tags$option(value = value, value))
     ),
     tags$script(HTML(script))
+  )
+}
+
+# modified filter_select to allow list columns input
+filter_select2 <- function(id, label, sharedData, group, allLevels = FALSE,
+                           multiple = TRUE) {
+  
+  options <- makeGroupOptions(sharedData, group, allLevels)
+  htmltools::browsable(attachDependencies(
+    tags$div(id = id, class = "form-group crosstalk-input-select crosstalk-input",
+             tags$label(class = "control-label", `for` = id, label),
+             tags$div(
+               tags$select(
+                 multiple = if (multiple) NA else NULL
+               ),
+               tags$script(type = "application/json",
+                           `data-for` = id,
+                           HTML(
+                             jsonlite::toJSON(options, dataframe = "columns", pretty = TRUE)
+                           )
+               )
+             )
+    ),
+    c(list(crosstalk:::jqueryLib(), crosstalk:::selectizeLib()), crosstalk:::crosstalkLibs())
+  ))
+}
+
+makeGroupOptions <- function(sharedData, group, allLevels) {
+  df <- sharedData$data(
+    withSelection = FALSE,
+    withFilter = FALSE,
+    withKey = TRUE
+  )
+  
+  if (inherits(group, "formula"))
+    group <- lazyeval::f_eval(group, df)
+  
+  if (length(group) < 1) {
+    stop("Can't form options with zero-length group vector")
+  }
+  
+  lvls <- if (is.factor(group)) {
+    if (allLevels) {
+      levels(group)
+    } else {
+      levels(droplevels(group))
+    }
+  } else if (!is.list(group)) {
+    sort(unique(group))
+  } else if (is.list(group)) {
+    unlist(group) |> unique() |> sort()
+  }
+  matches <- match(group, lvls)
+  
+  # a list where each element are the KEYs that match the value of the filter
+  # this works for a single element against a list of character vectors
+  # gets the index of y, if an element of y matches/contains x
+  get_ind_where_x_matches_y <- function(x, y) {
+    which(
+      map_lgl(
+        y, 
+        \(y) x %in% y
+      )
+    )
+  }
+  
+  get_index_that_matches <- function(x, y_list) {
+    # handle length 0 elements
+    y_list <- y_list |>  
+      map(\(list_element) ifelse(length(list_element)  == 0, '', list_element))
+    
+    
+    x |> 
+      map(
+        ~get_ind_where_x_matches_y(.x, y_list)
+      )
+  }
+  vals <- get_index_that_matches(lvls, group)
+  
+  lvls_str <- as.character(lvls)
+  
+  options <- list(
+    items = data.frame(value = lvls_str, label = lvls_str, stringsAsFactors = FALSE),
+    map = setNames(vals, lvls_str),
+    group = sharedData$groupName()
+  )
+  
+  options
+}
+
+jqueryLib <- function() {
+  htmlDependency(
+    name = "jquery",
+    version = "3.5.1",
+    package = "crosstalk",
+    src = "lib/jquery",
+    script = "jquery.min.js"
+  )
+}
+
+
+selectizeLib <- function(bootstrap = TRUE) {
+  htmlDependency(
+    name = "selectize",
+    version = "0.12.4",
+    package = "crosstalk",
+    src = "lib/selectize",
+    stylesheet = if (bootstrap) "css/selectize.bootstrap3.css",
+    script = "js/selectize.min.js"
   )
 }
 
