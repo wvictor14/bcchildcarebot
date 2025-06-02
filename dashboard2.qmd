@@ -2,7 +2,7 @@
 title: "BC Child Care Vacancies"
 date: today
 format:
-  html:
+  dashboard:
     theme: 
       - custom2.scss
     nav-buttons: 
@@ -57,17 +57,9 @@ tbl_data <- bccc |>
 shared_data <- SharedData$new(tbl_data)
 ```
 
-# Info
+# Main
 
-Last date that this page has been updated: `{r} .today`
-
-Last date that BC updated dataset: `{r} dataset_last_update`
-
-Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
-
-[^1]: This dataset is not guaranteed to have accurate information. Please verify any information from this resource.
-
-# Filter Facilities
+## Filter Facilities {height=15%}
 
 ```{r filters}
 div(
@@ -80,7 +72,7 @@ div(
 )
 ```
 
-# Table 
+## Row 
 
 ```{r render_reactable}
 #| padding: 0px
@@ -108,19 +100,13 @@ reactable(
       width = '100%'
     )
   )
-) |> 
-  bslib::card(
-    height = '600px',
-    full_screen = TRUE,
-    style = "resize:vertical;"
 )
 ```
-
-# Map
 
 ```{r leaftlet_map}
 #| column: screen
 #| message: false
+#| padding: 0px
 icons <- awesomeIcons(
   icon = 'home',
   iconColor = 'black',
@@ -160,5 +146,13 @@ map
 ```
 
 # Info
+
+Last date that this page has been updated: `{r} .today`
+
+Last date that BC updated dataset: `{r} dataset_last_update`
+
+Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
+
+[^1]: This dataset is not guaranteed to have accurate information. Please verify any information from this resource.
 
 Data is downloaded every day from the BC government [BC Data Catalogue](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39). However, the government does not necessarily update the dataset every day. This data also powers the [Child Care Map](https://maps.gov.bc.ca/ess/hm/ccf/), which the BC government maintains.
