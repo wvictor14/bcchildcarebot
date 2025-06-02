@@ -72,3 +72,8 @@ color: rgba(0, 0, 0, 0.6);
 .selectize-dropdown {
   z-index: 10000 !important; 
 }
+
+// prevent reactable border from cutting off bs card
+.reactable {
+  border-radius: 0.375rem;
+}
