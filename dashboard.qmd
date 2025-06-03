@@ -79,7 +79,8 @@ div(
 ## Row 
 
 ```{r render_reactable}
-#| padding: 0px
+#| padding: 1px
+#| classes: border-dark
 #| eval: true
 # columns to hide from unested view
 coldefs <- create_coldefs(tbl_data)
