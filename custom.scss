@@ -93,5 +93,8 @@ color: rgba(0, 0, 0, 0.6);
 
 // prevent reactable border from cutting off bs card
 .reactable {
+  border-style: none;
   border-radius: 0.375rem;
+  border-color: rgba(0, 0, 0, 0.175);
+  border-width: 0px;
 }
