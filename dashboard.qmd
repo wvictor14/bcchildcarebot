@@ -68,6 +68,7 @@ shared_data <- SharedData$new(tbl_data)
 
 ```{r filters}
 #| classes: border-0
+#| expandable: false
 div(
   class = "filters",
   crosstalk::filter_select('filter_city', 'City', shared_data, ~CITY),
@@ -79,8 +80,7 @@ div(
 ## Row 
 
 ```{r render_reactable}
-#| padding: 1px
-#| classes: border-dark
+#| classes: "border-dark .py-2 .px-1"
 #| eval: true
 # columns to hide from unested view
 coldefs <- create_coldefs(tbl_data)
