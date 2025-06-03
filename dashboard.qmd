@@ -31,6 +31,7 @@ library(tippy)
 library(bslib)
 library(here)
 library(jsonlite)
+library(pins)
 source(here::here('R', 'filter.R'))
 source(here::here('R', 'prepare_data.R'))
 source(here::here('R', 'create_reactable.R'))
@@ -40,13 +41,18 @@ source(here::here('R', 'create_reactable.R'))
 #| include: false
 # read in bc child care data ----
 url <- 'https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af5224646/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39/download/childcare_locations.csv'
-bccc <- readr::read_csv(url)
+board <- board_url(
+  "https://raw.githubusercontent.com/bcchildcare/bcchildcare.github.io/refs/heads/main/board/_pins.yaml"
+)
+bccc <- pin_read(board, 'bcchildcare') |> as_tibble()
+bccc_meta <- pin_meta(board, 'bcchildcare')
+
 .today <- lubridate::today(tzone = 'Canada/Pacific')
 ```
 
 ```{r setup_tbl_data}
 # latest vacancy update
-dataset_last_update <- max(bccc$VACANCY_LAST_UPDATE, na.rm = TRUE)
+dataset_last_update <- bccc_meta$user$date |>  lubridate::ymd()
 
 tbl_data <- bccc |>
   prepare_data() |> 
