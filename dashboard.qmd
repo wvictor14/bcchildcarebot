@@ -1,21 +1,18 @@
 ---
 title: "BC Child Care Vacancies"
 date: today
-format: 
-  html:
+format:
+  dashboard:
     theme: 
       - custom.scss
     nav-buttons: 
       - icon: github
         href: https://github.com/wvictor14/bcchildcarebot
-      - icon: mastodon
-        href: https://botsin.space/@bcchildcarebot
       - icon: house-fill
         href: https://victoryuan.com/
-    include-in-header: 
-      - text: |
-          <script data-goatcounter="https://victor2wy.goatcounter.com/count"
-            async src="//gc.zgo.at/count.js"></script>
+    include-in-header:
+        - text: |
+            <script src="reactable_row_details.js"></script>
 editor_options: 
   chunk_output_type: console
 execute:
@@ -32,257 +29,89 @@ library(crosstalk)
 library(leaflet)
 library(tippy)
 library(bslib)
+library(here)
+library(jsonlite)
+library(pins)
+source(here::here('R', 'filter.R'))
+source(here::here('R', 'prepare_data.R'))
+source(here::here('R', 'create_reactable.R'))
 ```
 
 ```{r load_data}
 #| include: false
 # read in bc child care data ----
-url <- 'https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af5224646/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39/download/childcare_locations.csv'
-bccc <- readr::read_csv(url)
+board <- board_url(
+  "https://raw.githubusercontent.com/bcchildcare/bcchildcare.github.io/refs/heads/main/board/_pins.yaml"
+)
+bccc <- pin_read(board, 'bcchildcare') |> as_tibble()
+bccc_meta <- pin_meta(board, 'bcchildcare')
+
 .today <- lubridate::today(tzone = 'Canada/Pacific')
 ```
 
-
 ```{r setup_tbl_data}
 # latest vacancy update
-dataset_last_update <- max(bccc$VACANCY_LAST_UPDATE, na.rm = TRUE)
+dataset_last_update <- bccc_meta$user$date |>  lubridate::ymd()
 
 tbl_data <- bccc |>
+  prepare_data() |> 
   
   # filter to last vacancy update - 14 days
-  filter(
-    VACANCY_LAST_UPDATE >= dataset_last_update -1 -7
-  )  |> 
-  
-  # filter columns
-  select(
-    SERVICE_TYPE_CD:CITY, 
-    PHONE:EMAIL,
-    LONGITUDE, LATITUDE,
-    
-    # certs
-    ECE_CERTIFICATION_YN,
-    ELF_PROGRAMMING_YN,
-    IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
-    #    contains('OP_'),
-    #   contains('SRVC_'),
-    contains('LANG_'),
-    contains('VACANCY_') ) |> 
-  
-  select(NAME, everything()) |>
-  
-  
-  mutate(
-    popup = glue::glue(
-      "<b>{NAME}</b>",
-      "{SERVICE_TYPE_CD}", 
-      "{PHONE}",
-      "<br>Vacancy:", 
-      "&nbsp;&nbsp;&nbsp;&nbsp;<36 months: {VACANCY_SRVC_UNDER36}",
-      "&nbsp;&nbsp;&nbsp;&nbsp;30 months -- 5 years: {VACANCY_SRVC_30MOS_5YRS}",
-      "&nbsp;&nbsp;&nbsp;&nbsp;Preschool: {VACANCY_SRVC_LICPRE}",
-      "&nbsp;&nbsp;&nbsp;&nbsp;Grade 1 - Age 12: {VACANCY_SRVC_OOS_GR1_AGE12}",
-      .sep = "<br>"
-    )
-  ) |> 
-  
-  # crosstalk key
-  mutate(id = row_number()) |> 
-  
-  # clean vacancy and other binary columns for filters
-  
-  # if yes, replace with vacancy type, otherwise leave as NA
-  # NA will not show as a choice
-  pivot_longer(
-    cols =  c(
-      contains('VACANCY_SRVC_'), 
-      contains('LANG_'),
-      ECE_CERTIFICATION_YN,
-      ELF_PROGRAMMING_YN,
-      IS_CCFRI_AUTH,
-      IS_INCOMPLETE_IND
-    ),
-    names_to = 'name',
-    values_to = 'value'
-  ) |> 
-  mutate(
-    value = ifelse(
-      value == 'Y', 
-      str_remove_all(name, '^VACANCY_SRVC_') |> 
-        str_remove_all('^LANG_') |> 
-        str_remove_all('_YN$'),
-      NA
-    ),
-    value = case_when(
-      value == 'ECE_CERTIFICATION' ~ 'Early Childhood Educator (ECE)',
-      value == 'ELF_PROGRAMMING' ~ 'ELF',
-      value == 'IS_CCFRI_AUTH' ~ 'CCFRI authorized',
-      
-      value == '30MOS_5YRS' ~ "30 months - 5 years",
-      value == 'UNDER36' ~ 'Under 36 months',
-      value == 'LICPRE' ~ 'Licensed Pre-school',
-      value == 'OOS_GR1_AGE12' ~ 'Grade 1 - Age 12',
-      .default = value
-    )
-  ) |>
-  pivot_wider(names_from = name, values_from = value) 
-
-shared_data <- SharedData$new(tbl_data, key = ~id)
+  filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 -3) |> 
+  arrange(desc(VACANCY_LAST_UPDATE))
+shared_data <- SharedData$new(tbl_data)
 ```
 
-# Info
+# Main 
 
-Last date that this page has been updated: `{r} .today`
-
-Last date that BC updated dataset: `{r} dataset_last_update`
-
-Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
-
-[^1]: This dataset is not guaranteed to have accurate information. Please verify any information from this resource.
-
-# Filter Facilities
+## Filter Facilities {height=15%}
 
 ```{r filters}
-#' when no label, make label space disappear by setting -ve margin
-filter_checkbox_no_label <- function(...) {
-  div(
-    class = "filter-checkbox-no-label",
-    filter_checkbox(
-      ...
+div(
+  class = "filters",
+  search_filter("filter_name", "Search by Facility Name", shared_data, "NAME"),
+  #select_filter("filter_city", "City", shared_data, "CITY"),
+  crosstalk::filter_select('filter_city', 'City', shared_data, ~CITY),
+  #select_filter("filter_vacancy", "Vacancy", shared_data, "VACANCY")
+  filter_select2("filter_vacancy", "Vacancy", shared_data, ~VACANCY)
+)
+```
+
+## Row 
+
+```{r render_reactable}
+#| padding: 0px
+#| eval: true
+# columns to hide from unested view
+coldefs <- create_coldefs(tbl_data)
+reactable(
+  shared_data,
+  defaultSortOrder = "desc",
+  defaultColDef = colDef(
+    # show = FALSE,
+    headerClass = "header", align = "left"),
+  onClick = "expand",
+  resizable = TRUE,
+  columns = coldefs,
+  #details = function(index) row_details(index, tbl_data),
+  details = colDef(
+    details = JS('renderRowDetails'),
+    html = TRUE,
+  ),
+  pagination = TRUE,
+  searchable = FALSE,
+  theme = reactableTheme(
+    searchInputStyle = list(
+      width = '100%'
     )
   )
-}
+)
 ```
 
-```{r}
-#| panel: input
-htmltools::div(
-  id = "filterdiv",
-  #h3("Filter facilities"),
-  crosstalk::filter_slider(
-    "VACANCY_LAST_UPDATE", 
-    tippy::tippy(
-      h4("Vacancy Information Last Updated:"), 
-      "Filter to facilities that have been updated from between these two dates",
-      placement = 'right'), 
-    shared_data, 
-    ~VACANCY_LAST_UPDATE
-  ),
-  filter_select("CITY", h4("City:"), shared_data, ~CITY),
-  
-  h4('Certifications'),
-  filter_checkbox_no_label(
-    "ECE_CERTIFICATION_YN", 
-    NULL, 
-    shared_data, 
-    ~ECE_CERTIFICATION_YN
-  ),
-  filter_checkbox_no_label(
-    "ELF_PROGRAMMING_YN", 
-    NULL, 
-    shared_data, 
-    ~ELF_PROGRAMMING_YN
-  ),
-  filter_checkbox_no_label(
-    "IS_CCFRI_AUTH", 
-    NULL, 
-    shared_data, 
-    ~IS_CCFRI_AUTH
-  ),
-  filter_checkbox_no_label(
-    "IS_INCOMPLETE_IND", 
-    NULL, 
-    shared_data, 
-    ~IS_INCOMPLETE_IND
-  ),
-  
-  
-  tippy::tippy(
-    h4('Filter to facilities with vacancies in specific age group:'),
-    "If all are left unchecked, will show all facilities, regardless of vacancy status",
-    placement = 'right'
-  ),
-  filter_checkbox_no_label(
-    "VACANCY_SRVC_UNDER36", 
-    "", 
-    shared_data, 
-    ~VACANCY_SRVC_UNDER36
-  ),
-  filter_checkbox_no_label(
-    "VACANCY_SRVC_30MOS_5YRS", 
-    "", 
-    shared_data,
-    ~VACANCY_SRVC_30MOS_5YRS
-  ),
-  filter_checkbox_no_label(
-    "VACANCY_SRVC_LICPRE", 
-    "", 
-    shared_data, 
-    ~VACANCY_SRVC_LICPRE
-  ),
-  filter_checkbox_no_label(
-    "VACANCY_SRVC_OOS_GR1_AGE12",
-    "", 
-    shared_data, 
-    ~VACANCY_SRVC_OOS_GR1_AGE12
-  ),
-  
-  # language filters
-  tippy::tippy(
-    h4('Filter to facilities with that provide service in other languages'),
-    "This information is often inaccurate",
-    placement = 'right'
-  ),
-  filter_checkbox_no_label(
-    "LANG_CANTONESE_YN",
-    "", 
-    shared_data, 
-    ~LANG_CANTONESE_YN
-  ),
-  filter_checkbox_no_label(
-    "LANG_MANDARIN_YN",
-    "", 
-    shared_data, 
-    ~LANG_MANDARIN_YN
-  ),
-  filter_checkbox_no_label(
-    "LANG_PUNJABI_YN",
-    "", 
-    shared_data, 
-    ~LANG_PUNJABI_YN
-  ),
-  filter_checkbox_no_label(
-    "LANG_FRENCH_YN",
-    "", 
-    shared_data, 
-    ~LANG_FRENCH_YN
-  ),
-  filter_checkbox_no_label(
-    "LANG_SPANISH_YN",
-    "", 
-    shared_data, 
-    ~LANG_SPANISH_YN
-  ),
-  filter_checkbox_no_label(
-    "LANG_OTHER_YN",
-    "", 
-    shared_data, 
-    ~LANG_OTHER_YN
-  ),
-) |>  htmltools::browsable()
-```
-
-```{js}
-function filter_default() {
-  document.getElementById("CITY").getElementsByClassName("selectized")[0].selectize.setValue(["Richmond", "Vancouver", "Burnaby"], false);
-}
-$(document).ready(filter_default);
-```
-
-# Map
-
-```{r}
+```{r leaftlet_map}
 #| column: screen
+#| message: false
+#| padding: 0px
 icons <- awesomeIcons(
   icon = 'home',
   iconColor = 'black',
@@ -295,7 +124,7 @@ pal <- colorFactor(
   domain = service_levels
 )
 
-shared_data |> 
+map <- shared_data |> 
   
   # map
   leaflet() |>
@@ -318,166 +147,17 @@ shared_data |>
     title = "Childcare type",
     opacity = 1
   )
-
-```
-
-# Table 
-
-```{r render_reactable}
-#| padding: 0px
-#| eval: true
-row_details <- function(index, bccc) {
-  bccc <- bccc[index, ] 
-  # function that creates class based on colum name
-  df_field <- function(name, ...) {
-    if (any(is.na(...))) NULL
-    else tagList(div(class = "detail-label", name), ...)
-  }
-  
-  detail <- div(
-    class = "tbl-detail",
-    div(class = "detail-header", 
-        span(class = "detail-title", bccc$NAME)),
-    div(class = "detail-description", bccc$SERVICE_TYPE_CD),
-    
-    bscols(
-      div(
-        # column left
-        df_field('Last Updated', bccc$VACANCY_LAST_UPDATE),
-        df_field("Phone", bccc$PHONE),
-        df_field("Website", bccc$WEBSITE),
-        df_field("Email", bccc$EMAIL),
-        df_field("Address", bccc$ADDRESS_1),
-        df_field('Address 2', bccc$ADDRESS_2),
-        df_field('City', bccc$CITY),
-        df_field('ECE_CERTIFICATION_YN', bccc$ECE_CERTIFICATION_YN),
-        df_field('ELF', bccc$ELF_PROGRAMMING_YN),
-        df_field('IS_INCOMPLETE_IND', bccc$IS_INCOMPLETE_IND), 
-        df_field('IS_CCFRI_AUTH', bccc$IS_CCFRI_AUTH)
-      ),
-      div( 
-        # column right
-        df_field(
-          'Map', 
-          bccc |> 
-            leaflet() |>
-            addProviderTiles(providers$CartoDB.Voyager) |>
-            #addProviderTiles(providers$CartoDB.Positron) |>
-            addCircleMarkers(lng = ~LONGITUDE, lat = ~LATITUDE)
-        )
-      )
-    ),
-    bscols(
-      div(
-        df_field(
-          "Vacancy type",
-          reactable(
-            bccc |>  
-              select(contains('VACANCY_SRVC_')) |> 
-              pivot_longer(
-                everything(), 
-                names_to = 'Age Group', 
-                values_to = 'Vacancy?',
-                names_prefix = 'VACANCY_SRVC_'
-              ) |> 
-              mutate(`Vacancy?` = ifelse(!is.na(`Vacancy?`), 'Y', 'N'))
-            ,
-            pagination = FALSE,
-            defaultColDef = colDef(headerClass = "header"),
-            class = "vacancy-table",
-            theme = reactableTheme(cellPadding = "8px 12px")
-          )
-        )
-      ),
-      div(
-        df_field(
-          'Language',
-          reactable(
-            bccc |>  
-              select(contains('LANG_')) |> 
-              pivot_longer(everything(), names_to = 'Language', values_to = 'Y/N') |> 
-              mutate(
-                Language = str_remove_all(Language, 'LANG_') |> 
-                  str_remove_all('_YN'),
-                `Y/N` = ifelse(!is.na(`Y/N`), 'Y', 'N'))
-            ,
-            pagination = FALSE,
-            defaultColDef = colDef(headerClass = "header"),
-            class = "vacancy-table",
-            theme = reactableTheme(cellPadding = "8px 12px")
-          )
-        )
-      )
-    )
-  )
-  detail
-}
-
-#htmltools::browsable(row_details(1, bccc))
-
-# columns to hide from unested view
-hide <- tbl_data |> 
-  select(
-    contains('VACANCY'), -VACANCY_LAST_UPDATE,
-    LONGITUDE, LATITUDE,
-    SERVICE_TYPE_CD,
-    ADDRESS_1, PHONE,
-    id, `ADDRESS_2`, WEBSITE, EMAIL,
-    
-    ECE_CERTIFICATION_YN,
-    ELF_PROGRAMMING_YN,
-    IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
-    popup,
-    contains('LANG_')
-    
-  ) |> 
-  colnames() %>%
-  setNames(., .) |> 
-  map(
-    ~colDef(
-      show = FALSE
-    )
-  )
-
-show <- list(
-  VACANCY_LAST_UPDATE = colDef(name = 'Last Updated'),
-  NAME = colDef(name = 'Name'),
-  CITY = colDef(name = 'City')
-)
-
-coldefs <- purrr::list_flatten(list(hide, show))
-
-reactable(
-  shared_data,
-  #tbl_data[1:10,],
-  defaultSorted = "VACANCY_LAST_UPDATE",
-  defaultSortOrder = "desc",
-  defaultColDef = colDef(
-    # show = FALSE,
-    headerClass = "header", align = "left"),
-  onClick = "expand",
-  resizable = TRUE,
-  columns = coldefs,
-  details = function(index) row_details(index, tbl_data),
-  pagination = FALSE,
-  searchable = TRUE,
-  theme = reactableTheme(
-    searchInputStyle = list(
-      width = '100%'
-    )
-  )
-) |> 
-  bslib::card(
-    height = '600px',
-    full_screen = TRUE,
-    style = "resize:vertical;"
-)
+map
 ```
 
 # Info
 
+Last date that this page has been updated: `{r} .today`
+
+Last date that BC updated dataset: `{r} dataset_last_update`
+
+Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
+
+[^1]: This dataset is not guaranteed to have accurate information. Please verify any information from this resource.
+
 Data is downloaded every day from the BC government [BC Data Catalogue](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39). However, the government does not necessarily update the dataset every day. This data also powers the [Child Care Map](https://maps.gov.bc.ca/ess/hm/ccf/), which the BC government maintains.
-
-It is well known that childcare is crazy in Vancouver. Personally, we experienced so many challenges in finding good childcare facilities with vacancies in Vancouver. So I built this childcare facility tool to help myself find childcare for my son. In my experience using this app we were able to very quickly find a nice childcare facility near our home that had vacancies. Maybe when he ages out into the next age group, I will update the app with more features.
-
-I also used this experience to develop my professional development through learning how to build and deploy static html dashboards using quarto and github actions. It was a fun project and I learned several new tools.
