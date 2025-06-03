@@ -14,27 +14,28 @@ prepare_data <- function(x) {
       #    contains('OP_'),
       #   contains('SRVC_'),
       contains('LANG_'),
-      contains('VACANCY_') ) |> 
+      contains('VACANCY_'),
+      popup) |> 
     
     select(NAME, everything()) |>
     
+    # 
+    # mutate(
+    #   popup = glue::glue(
+    #     "<b>{NAME}</b>",
+    #     "{SERVICE_TYPE_CD}", 
+    #     "{PHONE}",
+    #     "<br>Vacancy:", 
+    #     "&nbsp;&nbsp;&nbsp;&nbsp;<36 months: {VACANCY_SRVC_UNDER36}",
+    #     "&nbsp;&nbsp;&nbsp;&nbsp;30 months -- 5 years: {VACANCY_SRVC_30MOS_5YRS}",
+    #     "&nbsp;&nbsp;&nbsp;&nbsp;Preschool: {VACANCY_SRVC_LICPRE}",
+    #     "&nbsp;&nbsp;&nbsp;&nbsp;Grade 1 - Age 12: {VACANCY_SRVC_OOS_GR1_AGE12}",
+    #     .sep = "<br>"
+    #   )
+    # ) |> 
     
-    mutate(
-      popup = glue::glue(
-        "<b>{NAME}</b>",
-        "{SERVICE_TYPE_CD}", 
-        "{PHONE}",
-        "<br>Vacancy:", 
-        "&nbsp;&nbsp;&nbsp;&nbsp;<36 months: {VACANCY_SRVC_UNDER36}",
-        "&nbsp;&nbsp;&nbsp;&nbsp;30 months -- 5 years: {VACANCY_SRVC_30MOS_5YRS}",
-        "&nbsp;&nbsp;&nbsp;&nbsp;Preschool: {VACANCY_SRVC_LICPRE}",
-        "&nbsp;&nbsp;&nbsp;&nbsp;Grade 1 - Age 12: {VACANCY_SRVC_OOS_GR1_AGE12}",
-        .sep = "<br>"
-      )
-    ) |> 
-    
-    # crosstalk key
-    mutate(id = row_number()) |> 
+    # # crosstalk key
+    # mutate(id = row_number()) |> 
     
     # clean vacancy and other binary columns for filters
     

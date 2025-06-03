@@ -94,7 +94,7 @@ create_coldefs <- function(df) {
       LONGITUDE, LATITUDE,
       SERVICE_TYPE_CD,
       ADDRESS_1, PHONE,
-      id, `ADDRESS_2`, WEBSITE, EMAIL,
+      `ADDRESS_2`, WEBSITE, EMAIL,
       
       ECE_CERTIFICATION_YN,
       ELF_PROGRAMMING_YN,
