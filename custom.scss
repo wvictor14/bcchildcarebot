@@ -17,6 +17,22 @@ $theme-colors: (
 
 $navbar-bg: #036;
 
+.leaflet-popup-content {
+  font-size: small;
+  min-width: 150px;
+}
+
+.leaflet {
+  height: calc(100vh - 80px) !important;
+}
+
+.leaflet-tooltip {
+  font-size: medium;
+}
+.leaflet-tooltip-right {
+  margin-left: 10px;
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;
