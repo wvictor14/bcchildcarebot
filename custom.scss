@@ -1,7 +1,7 @@
 /*-- scss:defaults --*/
 // Change theme-colors
 $theme-colors: (
-  primary: #38598a,
+  primary: #036,
   secondary:#6c757d, // new entry
   success: #43893e,
   info: #96c0e6,
@@ -9,11 +9,13 @@ $theme-colors: (
   danger: #d93e45,
   // new entries
     primary-nav: #036,
-  secondary-nav: #5475a7,
+  secondary-nav: #036,
   bcgold: #fcba19,
   light:#f8f9fa, // new entries
   dark: #212529, // new entries
 );
+
+$navbar-bg: #036;
 
 .filters {
   display: flex;
