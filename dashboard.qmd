@@ -67,13 +67,12 @@ shared_data <- SharedData$new(tbl_data)
 ## Filter Facilities {height=15%}
 
 ```{r filters}
+#| classes: border-0
 div(
   class = "filters",
-  search_filter("filter_name", "Search by Facility Name", shared_data, "NAME"),
-  #select_filter("filter_city", "City", shared_data, "CITY"),
   crosstalk::filter_select('filter_city', 'City', shared_data, ~CITY),
-  #select_filter("filter_vacancy", "Vacancy", shared_data, "VACANCY")
-  filter_select2("filter_vacancy", "Vacancy", shared_data, ~VACANCY)
+  filter_select2("filter_vacancy", "Vacancy", shared_data, ~VACANCY),
+  search_filter("filter_name", "Search by Facility Name", shared_data, "NAME")
 )
 ```
 
