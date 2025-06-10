@@ -57,7 +57,7 @@ tbl_data <- bccc |>
   prepare_data() |> 
   
   # filter to last vacancy update - 14 days
-  filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 -3) |> 
+  filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 - 5) |> 
   arrange(desc(VACANCY_LAST_UPDATE))
 shared_data <- SharedData$new(tbl_data)
 ```
