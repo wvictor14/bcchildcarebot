@@ -64,10 +64,10 @@ shared_data <- SharedData$new(tbl_data)
 
 # Main 
 
-## Filter Facilities {height=15%}
+## Filter Facilities {height=10%}
 
 ```{r filters}
-#| classes: border-0
+#| classes: "filters-card .border-0 .padding-0 .margin-0"
 #| expandable: false
 div(
   class = "filters",
@@ -80,7 +80,7 @@ div(
 ## Row 
 
 ```{r render_reactable}
-#| classes: "border-dark .py-2 .px-1"
+#| classes: "border"
 #| eval: true
 # columns to hide from unested view
 coldefs <- create_coldefs(tbl_data)
