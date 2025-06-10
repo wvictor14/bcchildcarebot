@@ -8,10 +8,26 @@ function renderRowDetails(cellInfo) {
     </div>
   `;
   
-  const details = detailsField('Last Updated', cellInfo.row['VACANCY_LAST_UPDATE']) 
+  const details = [
+    detailsField('Last Updated', cellInfo.row['VACANCY_LAST_UPDATE']),
+    detailsField('Phone', cellInfo.row['PHONE']),
+    detailsField('Website', cellInfo.row['WEBSITE']),
+    detailsField('Email', cellInfo.row['Email']),
+    detailsField('Address', cellInfo.row['ADDRESS_1']),
+    detailsField('City', cellInfo.row['CITY']),
 
-  const text = header + details;
+    detailsField('ECE Certified', cellInfo.row['ECE_CERTIFICATION_YN']),
+    detailsField('ELF Certified', cellInfo.row['ELF_PROGRAMMING_YN']),
+    detailsField('Incomplete IND', cellInfo.row['IS_INCOMPLETE_IND']),
+    detailsField('CCFRI Authorized', cellInfo.row['IS_CCFRI_AUTH'])
+  ]
 
+  const text = `
+    <div class = 'childcare-details ms-10'> 
+      ${header} 
+      ${details.join('')}
+    </div>
+    `;
   return text
 }
 
