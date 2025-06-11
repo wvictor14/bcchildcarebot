@@ -21,7 +21,7 @@ prepare_data <- function(x) {
     
     # replace NA with blank
     
-    mutate(EMAIL = ifelse(is.na(EMAIL), '', EMAIL))
+    mutate(EMAIL = ifelse(is.na(EMAIL), '', EMAIL)) |> 
     
     # 
     # mutate(
@@ -45,39 +45,39 @@ prepare_data <- function(x) {
     # 
     # # if yes, replace with vacancy type, otherwise leave as NA
     # # NA will not show as a choice
-    # pivot_longer(
-    #   cols =  c(
-    #     contains('VACANCY_SRVC_'), 
-    #     contains('LANG_'),
-    #     ECE_CERTIFICATION_YN,
-    #     ELF_PROGRAMMING_YN,
-    #     IS_CCFRI_AUTH,
-    #     IS_INCOMPLETE_IND
-    #   ),
-    #   names_to = 'name',
-    #   values_to = 'value'
-    # ) |> 
-    # mutate(
-    #   value = ifelse(
-    #     value == 'Y', 
-    #     str_remove_all(name, '^VACANCY_SRVC_') |> 
-    #       str_remove_all('^LANG_') |> 
-    #       str_remove_all('_YN$'),
-    #     NA
-    #   ),
-    #   value = case_when(
-    #     value == 'ECE_CERTIFICATION' ~ 'Early Childhood Educator (ECE)',
-    #     value == 'ELF_PROGRAMMING' ~ 'ELF',
-    #     value == 'IS_CCFRI_AUTH' ~ 'CCFRI authorized',
-    #     
-    #     value == '30MOS_5YRS' ~ "30 months - 5 years",
-    #     value == 'UNDER36' ~ 'Under 36 months',
-    #     value == 'LICPRE' ~ 'Licensed Pre-school',
-    #     value == 'OOS_GR1_AGE12' ~ 'Grade 1 - Age 12',
-    #     .default = value
-    #   )
-    # ) |>
-    # pivot_wider(names_from = name, values_from = value) 
+    pivot_longer(
+      cols =  c(
+        contains('VACANCY_SRVC_'),
+        contains('LANG_')
+        # ECE_CERTIFICATION_YN,
+        # ELF_PROGRAMMING_YN,
+        # IS_CCFRI_AUTH,
+        # IS_INCOMPLETE_IND
+      ),
+      names_to = 'name',
+      values_to = 'value'
+    ) |>
+    mutate(
+      value = ifelse(
+        value == 'Y',
+        str_remove_all(name, '^VACANCY_SRVC_') |>
+          str_remove_all('^LANG_') |>
+          str_remove_all('_YN$'),
+        NA
+      ),
+      value = case_when(
+        value == 'ECE_CERTIFICATION' ~ 'Early Childhood Educator (ECE)',
+        value == 'ELF_PROGRAMMING' ~ 'ELF',
+        value == 'IS_CCFRI_AUTH' ~ 'CCFRI authorized',
+
+        value == '30MOS_5YRS' ~ "30 months - 5 years",
+        value == 'UNDER36' ~ 'Under 36 months',
+        value == 'LICPRE' ~ 'Licensed Pre-school',
+        value == 'OOS_GR1_AGE12' ~ 'Grade 1 - Age 12',
+        .default = value
+      )
+    ) |>
+    pivot_wider(names_from = name, values_from = value)
   
   # add vacancy data into 1 column
   # list column where each list-element is a vector of the age groups a facility
