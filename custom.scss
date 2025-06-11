@@ -99,6 +99,18 @@ color: rgba(0, 0, 0, 0.6);
   z-index: 10000 !important; 
 }
 
+// input text positioning
+.selectize-control.multi .selectize-input.has-items {
+  padding-top: 0 !important;
+}
+.selectize-input {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.filter-input input[type="search"] {
+  padding: 2px 12px;
+}
+
 // prevent reactable border from cutting off bs card
 .reactable {
   border-style: none;
