@@ -127,3 +127,11 @@ color: rgba(0, 0, 0, 0.6);
 .h4 {
   margin-top: 0.5rem;
 }
+
+.rt-th:first-child,
+.rt-th:first-child > .rt-th-inner, 
+.rt-td:first-child,
+.rt-td:first-child > .rt-td-inner {
+  min-width: 0 !important;
+  width: 0 !important;
+}
