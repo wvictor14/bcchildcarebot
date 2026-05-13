@@ -45,54 +45,56 @@ bccc <- readr::read_csv(url)
 dataset_last_update <- max(bccc$VACANCY_LAST_UPDATE, na.rm = TRUE)
 
 tbl_data <- bccc |>
-  
+
   # filter to last vacancy update - 14 days
   filter(
-    VACANCY_LAST_UPDATE >= dataset_last_update -1 -7
-  )  |> 
-  
+    VACANCY_LAST_UPDATE >= dataset_last_update - 1 - 7
+  ) |>
+
   # filter columns
   select(
-    SERVICE_TYPE_CD:CITY, 
+    SERVICE_TYPE_CD:CITY,
     PHONE:EMAIL,
-    LONGITUDE, LATITUDE,
-    
+    LONGITUDE,
+    LATITUDE,
+
     # certs
     ECE_CERTIFICATION_YN,
     ELF_PROGRAMMING_YN,
-    IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
+    IS_INCOMPLETE_IND,
+    IS_CCFRI_AUTH,
     #    contains('OP_'),
     #   contains('SRVC_'),
     contains('LANG_'),
-    contains('VACANCY_') ) |> 
-  
+    contains('VACANCY_')
+  ) |>
+
   select(NAME, everything()) |>
-  
-  
+
   mutate(
     popup = glue::glue(
       "<b>{NAME}</b>",
-      "{SERVICE_TYPE_CD}", 
+      "{SERVICE_TYPE_CD}",
       "{PHONE}",
-      "<br>Vacancy:", 
+      "<br>Vacancy:",
       "&nbsp;&nbsp;&nbsp;&nbsp;<36 months: {VACANCY_SRVC_UNDER36}",
       "&nbsp;&nbsp;&nbsp;&nbsp;30 months -- 5 years: {VACANCY_SRVC_30MOS_5YRS}",
       "&nbsp;&nbsp;&nbsp;&nbsp;Preschool: {VACANCY_SRVC_LICPRE}",
       "&nbsp;&nbsp;&nbsp;&nbsp;Grade 1 - Age 12: {VACANCY_SRVC_OOS_GR1_AGE12}",
       .sep = "<br>"
     )
-  ) |> 
-  
+  ) |>
+
   # crosstalk key
-  mutate(id = row_number()) |> 
-  
+  mutate(id = row_number()) |>
+
   # clean vacancy and other binary columns for filters
-  
+
   # if yes, replace with vacancy type, otherwise leave as NA
   # NA will not show as a choice
   pivot_longer(
-    cols =  c(
-      contains('VACANCY_SRVC_'), 
+    cols = c(
+      contains('VACANCY_SRVC_'),
       contains('LANG_'),
       ECE_CERTIFICATION_YN,
       ELF_PROGRAMMING_YN,
@@ -101,12 +103,12 @@ tbl_data <- bccc |>
     ),
     names_to = 'name',
     values_to = 'value'
-  ) |> 
+  ) |>
   mutate(
     value = ifelse(
-      value == 'Y', 
-      str_remove_all(name, '^VACANCY_SRVC_') |> 
-        str_remove_all('^LANG_') |> 
+      value == 'Y',
+      str_remove_all(name, '^VACANCY_SRVC_') |>
+        str_remove_all('^LANG_') |>
         str_remove_all('_YN$'),
       NA
     ),
@@ -114,7 +116,7 @@ tbl_data <- bccc |>
       value == 'ECE_CERTIFICATION' ~ 'Early Childhood Educator (ECE)',
       value == 'ELF_PROGRAMMING' ~ 'ELF',
       value == 'IS_CCFRI_AUTH' ~ 'CCFRI authorized',
-      
+
       value == '30MOS_5YRS' ~ "30 months - 5 years",
       value == 'UNDER36' ~ 'Under 36 months',
       value == 'LICPRE' ~ 'Licensed Pre-school',
@@ -122,7 +124,7 @@ tbl_data <- bccc |>
       .default = value
     )
   ) |>
-  pivot_wider(names_from = name, values_from = value) 
+  pivot_wider(names_from = name, values_from = value)
 
 shared_data <- SharedData$new(tbl_data, key = ~id)
 ```
@@ -144,73 +146,73 @@ htmltools::div(
   id = "filterdiv",
   h3("Filter facilities"),
   crosstalk::filter_slider(
-    "VACANCY_LAST_UPDATE", 
+    "VACANCY_LAST_UPDATE",
     tippy::tippy(
-      h4("Vacancy Information Last Updated:"), 
+      h4("Vacancy Information Last Updated:"),
       "Filter to facilities that have been updated from between these two dates",
-      placement = 'right'), 
-    shared_data, 
+      placement = 'right'
+    ),
+    shared_data,
     ~VACANCY_LAST_UPDATE
   ),
   filter_select("CITY", h4("City:"), shared_data, ~CITY),
-  
+
   h4('Certifications'),
   filter_checkbox_no_label(
-    "ECE_CERTIFICATION_YN", 
-    NULL, 
-    shared_data, 
+    "ECE_CERTIFICATION_YN",
+    NULL,
+    shared_data,
     ~ECE_CERTIFICATION_YN
   ),
   filter_checkbox_no_label(
-    "ELF_PROGRAMMING_YN", 
-    NULL, 
-    shared_data, 
+    "ELF_PROGRAMMING_YN",
+    NULL,
+    shared_data,
     ~ELF_PROGRAMMING_YN
   ),
   filter_checkbox_no_label(
-    "IS_CCFRI_AUTH", 
-    NULL, 
-    shared_data, 
+    "IS_CCFRI_AUTH",
+    NULL,
+    shared_data,
     ~IS_CCFRI_AUTH
   ),
   filter_checkbox_no_label(
-    "IS_INCOMPLETE_IND", 
-    NULL, 
-    shared_data, 
+    "IS_INCOMPLETE_IND",
+    NULL,
+    shared_data,
     ~IS_INCOMPLETE_IND
   ),
-  
-  
+
   tippy::tippy(
     h4('Filter to facilities with vacancies in specific age group:'),
     "If all are left unchecked, will show all facilities, regardless of vacancy status",
     placement = 'right'
   ),
   filter_checkbox_no_label(
-    "VACANCY_SRVC_UNDER36", 
-    "", 
-    shared_data, 
+    "VACANCY_SRVC_UNDER36",
+    "",
+    shared_data,
     ~VACANCY_SRVC_UNDER36
   ),
   filter_checkbox_no_label(
-    "VACANCY_SRVC_30MOS_5YRS", 
-    "", 
+    "VACANCY_SRVC_30MOS_5YRS",
+    "",
     shared_data,
     ~VACANCY_SRVC_30MOS_5YRS
   ),
   filter_checkbox_no_label(
-    "VACANCY_SRVC_LICPRE", 
-    "", 
-    shared_data, 
+    "VACANCY_SRVC_LICPRE",
+    "",
+    shared_data,
     ~VACANCY_SRVC_LICPRE
   ),
   filter_checkbox_no_label(
     "VACANCY_SRVC_OOS_GR1_AGE12",
-    "", 
-    shared_data, 
+    "",
+    shared_data,
     ~VACANCY_SRVC_OOS_GR1_AGE12
   ),
-  
+
   # language filters
   tippy::tippy(
     h4('Filter to facilities with that provide service in other languages'),
@@ -219,41 +221,42 @@ htmltools::div(
   ),
   filter_checkbox_no_label(
     "LANG_CANTONESE_YN",
-    "", 
-    shared_data, 
+    "",
+    shared_data,
     ~LANG_CANTONESE_YN
   ),
   filter_checkbox_no_label(
     "LANG_MANDARIN_YN",
-    "", 
-    shared_data, 
+    "",
+    shared_data,
     ~LANG_MANDARIN_YN
   ),
   filter_checkbox_no_label(
     "LANG_PUNJABI_YN",
-    "", 
-    shared_data, 
+    "",
+    shared_data,
     ~LANG_PUNJABI_YN
   ),
   filter_checkbox_no_label(
     "LANG_FRENCH_YN",
-    "", 
-    shared_data, 
+    "",
+    shared_data,
     ~LANG_FRENCH_YN
   ),
   filter_checkbox_no_label(
     "LANG_SPANISH_YN",
-    "", 
-    shared_data, 
+    "",
+    shared_data,
     ~LANG_SPANISH_YN
   ),
   filter_checkbox_no_label(
     "LANG_OTHER_YN",
-    "", 
-    shared_data, 
+    "",
+    shared_data,
     ~LANG_OTHER_YN
   ),
-) |>  htmltools::browsable()
+) |>
+  htmltools::browsable()
 ```
 
 ```{js}
@@ -279,43 +282,43 @@ Every day, new vacancies across BC Child Care facilities will be pull from the B
 
 ```{r}
 #| padding: 0px
-
 icons <- awesomeIcons(
   icon = 'home',
   iconColor = 'black',
   library = 'glyphicon'
 )
 
-service_levels <- bccc$SERVICE_TYPE_CD |>  unique() |> sort()
+service_levels <- bccc$SERVICE_TYPE_CD |> unique() |> sort()
 pal <- colorFactor(
-  c("navy", "firebrick", "orange"), 
+  c("navy", "firebrick", "orange"),
   domain = service_levels
 )
 
-shared_data |> 
-  
+shared_data |>
+
   # map
   leaflet() |>
-  setView(-123.04591, 49.25, zoom = 11) |> 
-  
+  setView(-123.04591, 49.25, zoom = 11) |>
+
   addProviderTiles(providers$CartoDB.Voyager) |>
   #providers$CartoDB.Positron
   addCircleMarkers(
-    popup = ~popup, 
+    popup = ~popup,
     label = ~NAME,
     #usterOptions = markerClusterOptions(),
     #icon = icons
-    stroke = FALSE,  fillOpacity = 0.6,
-    color = ~pal(SERVICE_TYPE_CD),
+    stroke = FALSE,
+    fillOpacity = 0.6,
+    color = ~ pal(SERVICE_TYPE_CD),
     radius = 5
-  ) |> 
+  ) |>
   addLegend(
-    "bottomright", pal = pal, 
+    "bottomright",
+    pal = pal,
     values = ~SERVICE_TYPE_CD,
     title = "Childcare type",
     opacity = 1
   )
-
 ```
 
 # Table 
@@ -325,26 +328,28 @@ shared_data |>
 ```{r dev}
 #| padding: 0px
 #| eval: false
-reactable(bccc[1:10,])
+reactable(bccc[1:10, ])
 ```
 
 ```{r render_reactable}
 #| padding: 0px
 #| eval: true
 row_details <- function(index, bccc) {
-  bccc <- bccc[index, ] 
+  bccc <- bccc[index, ]
   # function that creates class based on colum name
   df_field <- function(name, ...) {
-    if (any(is.na(...))) NULL
-    else tagList(div(class = "detail-label", name), ...)
+    if (any(is.na(...))) {
+      NULL
+    } else {
+      tagList(div(class = "detail-label", name), ...)
+    }
   }
-  
+
   detail <- div(
     class = "tbl-detail",
-    div(class = "detail-header", 
-        span(class = "detail-title", bccc$NAME)),
+    div(class = "detail-header", span(class = "detail-title", bccc$NAME)),
     div(class = "detail-description", bccc$SERVICE_TYPE_CD),
-    
+
     bscols(
       div(
         # column left
@@ -357,14 +362,14 @@ row_details <- function(index, bccc) {
         df_field('City', bccc$CITY),
         df_field('ECE_CERTIFICATION_YN', bccc$ECE_CERTIFICATION_YN),
         df_field('ELF', bccc$ELF_PROGRAMMING_YN),
-        df_field('IS_INCOMPLETE_IND', bccc$IS_INCOMPLETE_IND), 
+        df_field('IS_INCOMPLETE_IND', bccc$IS_INCOMPLETE_IND),
         df_field('IS_CCFRI_AUTH', bccc$IS_CCFRI_AUTH)
       ),
-      div( 
+      div(
         # column right
         df_field(
-          'Map', 
-          bccc |> 
+          'Map',
+          bccc |>
             leaflet() |>
             addProviderTiles(providers$CartoDB.Voyager) |>
             #addProviderTiles(providers$CartoDB.Positron) |>
@@ -377,16 +382,15 @@ row_details <- function(index, bccc) {
         df_field(
           "Vacancy type",
           reactable(
-            bccc |>  
-              select(contains('VACANCY_SRVC_')) |> 
+            bccc |>
+              select(contains('VACANCY_SRVC_')) |>
               pivot_longer(
-                everything(), 
-                names_to = 'Age Group', 
+                everything(),
+                names_to = 'Age Group',
                 values_to = 'Vacancy?',
                 names_prefix = 'VACANCY_SRVC_'
-              ) |> 
-              mutate(`Vacancy?` = ifelse(!is.na(`Vacancy?`), 'Y', 'N'))
-            ,
+              ) |>
+              mutate(`Vacancy?` = ifelse(!is.na(`Vacancy?`), 'Y', 'N')),
             pagination = FALSE,
             defaultColDef = colDef(headerClass = "header"),
             class = "vacancy-table",
@@ -398,14 +402,18 @@ row_details <- function(index, bccc) {
         df_field(
           'Language',
           reactable(
-            bccc |>  
-              select(contains('LANG_')) |> 
-              pivot_longer(everything(), names_to = 'Language', values_to = 'Y/N') |> 
+            bccc |>
+              select(contains('LANG_')) |>
+              pivot_longer(
+                everything(),
+                names_to = 'Language',
+                values_to = 'Y/N'
+              ) |>
               mutate(
-                Language = str_remove_all(Language, 'LANG_') |> 
+                Language = str_remove_all(Language, 'LANG_') |>
                   str_remove_all('_YN'),
-                `Y/N` = ifelse(!is.na(`Y/N`), 'Y', 'N'))
-            ,
+                `Y/N` = ifelse(!is.na(`Y/N`), 'Y', 'N')
+              ),
             pagination = FALSE,
             defaultColDef = colDef(headerClass = "header"),
             class = "vacancy-table",
@@ -421,25 +429,31 @@ row_details <- function(index, bccc) {
 #htmltools::browsable(row_details(1, bccc))
 
 # columns to hide from unested view
-hide <- tbl_data |> 
+hide <- tbl_data |>
   select(
-    contains('VACANCY'), -VACANCY_LAST_UPDATE,
-    LONGITUDE, LATITUDE,
+    contains('VACANCY'),
+    -VACANCY_LAST_UPDATE,
+    LONGITUDE,
+    LATITUDE,
     SERVICE_TYPE_CD,
-    ADDRESS_1, PHONE,
-    id, `ADDRESS_2`, WEBSITE, EMAIL,
-    
+    ADDRESS_1,
+    PHONE,
+    id,
+    `ADDRESS_2`,
+    WEBSITE,
+    EMAIL,
+
     ECE_CERTIFICATION_YN,
     ELF_PROGRAMMING_YN,
-    IS_INCOMPLETE_IND, IS_CCFRI_AUTH,
+    IS_INCOMPLETE_IND,
+    IS_CCFRI_AUTH,
     popup,
     contains('LANG_')
-    
-  ) |> 
+  ) |>
   colnames() %>%
-  setNames(., .) |> 
+  setNames(., .) |>
   map(
-    ~colDef(
+    ~ colDef(
       show = FALSE
     )
   )
@@ -459,7 +473,9 @@ reactable(
   defaultSortOrder = "desc",
   defaultColDef = colDef(
     # show = FALSE,
-    headerClass = "header", align = "left"),
+    headerClass = "header",
+    align = "left"
+  ),
   onClick = "expand",
   resizable = TRUE,
   columns = coldefs,
