@@ -1,0 +1,15 @@
+.selectize-dropdown {
+  position: absolute !important;
+  z-index: 99999 !important;
+  overflow: visible;
+}
+
+/* Allow dropdowns to overflow cards and containers */
+.card,
+.card-body,
+.html-fill-container,
+.html-fill-item,
+.filters {
+  overflow: visible !important;
+  z-index: auto !important;
+}
