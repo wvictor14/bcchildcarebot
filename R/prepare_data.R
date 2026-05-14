@@ -23,31 +23,15 @@ prepare_data <- function(x) {
     select(NAME, everything()) |>
 
     # replace NA with blank
-
-    mutate(EMAIL = ifelse(is.na(EMAIL), '', EMAIL)) |>
-
-    #
-    # mutate(
-    #   popup = glue::glue(
-    #     "<b>{NAME}</b>",
-    #     "{SERVICE_TYPE_CD}",
-    #     "{PHONE}",
-    #     "<br>Vacancy:",
-    #     "&nbsp;&nbsp;&nbsp;&nbsp;<36 months: {VACANCY_SRVC_UNDER36}",
-    #     "&nbsp;&nbsp;&nbsp;&nbsp;30 months -- 5 years: {VACANCY_SRVC_30MOS_5YRS}",
-    #     "&nbsp;&nbsp;&nbsp;&nbsp;Preschool: {VACANCY_SRVC_LICPRE}",
-    #     "&nbsp;&nbsp;&nbsp;&nbsp;Grade 1 - Age 12: {VACANCY_SRVC_OOS_GR1_AGE12}",
-    #     .sep = "<br>"
-    #   )
-    # ) |>
-
-    # # crosstalk key
-    # mutate(id = row_number()) |>
+    mutate(
+      EMAIL = ifelse(is.na(EMAIL), '', EMAIL),
+      VACANCY_LAST_UPDATE = lubridate::ymd(VACANCY_LAST_UPDATE),
+      .row_id = row_number()
+    ) |>
 
     # clean vacancy and other binary columns for filters
-    #
-    # # if yes, replace with vacancy type, otherwise leave as NA
-    # # NA will not show as a choice
+    # if yes, replace with vacancy type, otherwise leave as NA
+    # NA will not show as a choice
     pivot_longer(
       cols = c(
         contains('VACANCY_SRVC_'),
@@ -80,7 +64,8 @@ prepare_data <- function(x) {
         .default = value
       )
     ) |>
-    pivot_wider(names_from = name, values_from = value)
+    pivot_wider(names_from = name, values_from = value) |>
+    select(-.row_id)
 
   # add vacancy data into 1 column
   # list column where each list-element is a vector of the age groups a facility

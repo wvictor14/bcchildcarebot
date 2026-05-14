@@ -94,6 +94,7 @@ htmltools::div(
   h3("Filter facilities"),
   crosstalk::filter_slider(
     "VACANCY_LAST_UPDATE",
+
     tippy::tippy(
       h4("Vacancy Information Last Updated:"),
       "Filter to facilities that have been updated from between these two dates",
@@ -264,9 +265,7 @@ pal <- colorFactor(
   domain = service_levels
 )
 
-shared_data |>
-
-  map <- shared_data |>
+map <- shared_data |>
 
   # map
   leaflet() |>
