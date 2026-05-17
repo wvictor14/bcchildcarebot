@@ -1,42 +1,33 @@
 # bcchildcarebot
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
-[![](https://img.shields.io/badge/@bcchildcarebot@botsin.space-white?style=flat&labelColor=purple&logo=Mastodon&logoColor=white)](https://botsin.space/@bcchildcarebot)
 
 ## What
 
-To better find open vacancies for childcare in BC, I created two tools: a website that lets interactive exploration of childcare facilities in BC with open vacancies, and 2. a twitter (mastodon) bot that reports daily open vacancies. 
+The [BC Child Care Dashboard](https://victoryuan.com/bcchildcarebot/) is an interactive Quarto dashboard for finding open childcare vacancies across BC. It pulls daily data from the [BC Child Care dataset](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39) published by the BC government and is published automatically via GitHub Actions.
 
-These data are updated daily using the BC Childcare Map dataset from the [BC Child Care dataset](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39) from the BC government's website.
+The dashboard has interactive filters, a map view, and a facility listing to help navigate vacancies by location, age group, language, and certification.
 
-### The dashboard
+## Vacancy History
 
-The [BC Child Care Dashboard](https://victoryuan.com/bcchildcarebot/) is a quarto dashboard to help find open vacancies across BC Childcare facilities. It uses github actions to pull up-to-date data from the BC government's dataset resources directly. It has a combination of interactive filters, map views, and listings to help navigate through the dataset.
+In addition to the daily snapshot, this repo tracks per-facility vacancy history in `data/vacancy_history.csv`. This enables questions like:
 
-### The mastodon bot
+- Has this facility ever had a vacancy for under-36-month-olds?
+- When was the last time this facility had an open spot?
+- When did this facility first appear in the dataset?
 
-Source for the BC child care vacancy bot [@bcchildcarebot](https://botsin.space/@bcchildcarebot) built by [Victor Yuan](https://victoryuan.com). The repo contains a [GitHub Action](https://github.com/features/actions) that executes R code on every day to:
+The history file is updated daily by a separate GitHub Action (`update_history.yml`) that runs 30 minutes before the dashboard publishes. It tracks one row per facility with these fields:
 
-1. Pull out data from [BC Child Care dataset](https://catalogue.data.gov.bc.ca/dataset/child-care-map-data/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39)
-2. Check daily for any new vacancies
-3. Generate a summary of new vacancies
-4. report vacancies to Mastodon / Twitter
-
-This bot is built following [Matt Dray's](https://www.matt-dray.com) post on the [@londonmapbot](https://www.botsin.space/londonmapbot).
-
-#### How to follow
-
-For Mastodon, create an account on a Instance of your choosing (not botsin.space, which is only for bot accounts). Then follow [![](https://img.shields.io/badge/@bcchildcarebot@botsin.space-white?style=flat&labelColor=purple&logo=Mastodon&logoColor=white)](https://botsin.space/@bcchildcarebot) and turn on notifications.
-
-#### How it works
-
-##### mastodon 
-
-1. Create a mastdon account for your bot botsin.space
-2. add api keys as secrets (see github actions)
-3. Write r script to use `rtoot`  to post to mastodon
-4. set up github actions cron job to run daily
-
-##### twitter / x
-
-TBD
+| Column | Description |
+|---|---|
+| `FAC_PARTY_ID` | Unique facility identifier |
+| `is_active` | `FALSE` if facility no longer appears in BC data |
+| `date_first_seen` | Date facility first appeared after tracking began (`NA` for facilities present at launch) |
+| `ever_vacancy_under36` | Has ever had a vacancy for children under 36 months |
+| `last_vacancy_under36` | Most recent date vacancy was open for under-36-month-olds |
+| `ever_vacancy_30mos_5yrs` | Has ever had a vacancy for 30 months to 5 years |
+| `last_vacancy_30mos_5yrs` | Most recent date vacancy was open for 30 months to 5 years |
+| `ever_vacancy_licpre` | Has ever had a vacancy for licensed preschool |
+| `last_vacancy_licpre` | Most recent date vacancy was open for licensed preschool |
+| `ever_vacancy_gr1_age12` | Has ever had a vacancy for grade 1 to age 12 |
+| `last_vacancy_gr1_age12` | Most recent date vacancy was open for grade 1 to age 12 |
