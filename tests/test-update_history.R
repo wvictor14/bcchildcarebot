@@ -27,18 +27,15 @@ test_that("bootstrap_history has all required columns", {
   expect_equal(names(result), HISTORY_COLS)
 })
 
-test_that("bootstrap_history sets ever/last to TRUE/today when vacancy is Y", {
+test_that("bootstrap_history sets last_vacancy to today when vacancy is Y", {
   bccc <- make_bccc(1L, under36 = "Y", licpre = "Y")
   result <- bootstrap_history(bccc, today = as.Date("2026-05-16"))
-  expect_true(result$ever_vacancy_under36)
   expect_equal(result$last_vacancy_under36, as.Date("2026-05-16"))
-  expect_true(result$ever_vacancy_licpre)
   expect_equal(result$last_vacancy_licpre, as.Date("2026-05-16"))
 })
 
-test_that("bootstrap_history sets ever/last to NA when vacancy is N", {
+test_that("bootstrap_history sets last_vacancy to NA when vacancy is N", {
   result <- bootstrap_history(make_bccc(1L), today = as.Date("2026-05-16"))
-  expect_true(is.na(result$ever_vacancy_under36))
   expect_true(is.na(result$last_vacancy_under36))
 })
 
@@ -69,29 +66,26 @@ test_that("add_new_facilities adds new facility with today as date_first_seen", 
   expect_equal(nrow(result), 2L)
   new_row <- filter(result, FAC_PARTY_ID == 2L)
   expect_equal(new_row$date_first_seen, as.Date("2026-05-16"))
-  expect_true(new_row$ever_vacancy_under36)
   expect_equal(new_row$last_vacancy_under36, as.Date("2026-05-16"))
 })
 
-test_that("add_new_facilities sets ever/last to NA for new facility with no vacancy", {
+test_that("add_new_facilities sets last_vacancy to NA for new facility with no vacancy", {
   history <- bootstrap_history(make_bccc(1L), today = as.Date("2026-05-15"))
   bccc_new <- bind_rows(make_bccc(1L), make_bccc(2L))
   result <- add_new_facilities(history, bccc_new, today = as.Date("2026-05-16"))
   new_row <- filter(result, FAC_PARTY_ID == 2L)
-  expect_true(is.na(new_row$ever_vacancy_under36))
   expect_true(is.na(new_row$last_vacancy_under36))
 })
 
 # --- update_vacancies ---
 
-test_that("update_vacancies sets ever/last when today vacancy is Y", {
+test_that("update_vacancies sets last_vacancy when today vacancy is Y", {
   history <- bootstrap_history(make_bccc(1L), today = as.Date("2026-05-15"))
   result <- update_vacancies(
     history,
     make_bccc(1L, under36 = "Y"),
     today = as.Date("2026-05-16")
   )
-  expect_true(result$ever_vacancy_under36)
   expect_equal(result$last_vacancy_under36, as.Date("2026-05-16"))
 })
 
@@ -105,7 +99,6 @@ test_that("update_vacancies preserves existing last_* when today vacancy is N", 
     make_bccc(1L, under36 = "N"),
     today = as.Date("2026-05-16")
   )
-  expect_true(result$ever_vacancy_under36)
   expect_equal(result$last_vacancy_under36, as.Date("2026-05-15"))
 })
 
@@ -123,10 +116,10 @@ test_that("update_vacancies updates all four vacancy groups independently", {
   history <- bootstrap_history(make_bccc(1L), today = as.Date("2026-05-15"))
   bccc <- make_bccc(1L, under36 = "Y", mos5 = "N", licpre = "Y", gr1 = "N")
   result <- update_vacancies(history, bccc, today = as.Date("2026-05-16"))
-  expect_true(result$ever_vacancy_under36)
-  expect_true(is.na(result$ever_vacancy_30mos_5yrs))
-  expect_true(result$ever_vacancy_licpre)
-  expect_true(is.na(result$ever_vacancy_gr1_age12))
+  expect_equal(result$last_vacancy_under36, as.Date("2026-05-16"))
+  expect_true(is.na(result$last_vacancy_30mos_5yrs))
+  expect_equal(result$last_vacancy_licpre, as.Date("2026-05-16"))
+  expect_true(is.na(result$last_vacancy_gr1_age12))
 })
 
 # --- update_active_status ---

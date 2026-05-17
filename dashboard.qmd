@@ -15,8 +15,10 @@ format:
         href: https://botsin.space/@bcchildcarebot
       - icon: house-fill
         href: https://victoryuan.com/
-editor_options: 
+editor_options:
   chunk_output_type: console
+params:
+  fast_render: false
 ---
 
 ```{r load_libraries}
@@ -36,6 +38,26 @@ library(tippy)
 url <- 'https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af5224646/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39/download/childcare_locations.csv'
 bccc <- readr::read_csv(url)
 .today <- lubridate::today(tzone = 'Canada/Pacific')
+
+if (file.exists("data/vacancy_history.csv")) {
+  history <- readr::read_csv(
+    "data/vacancy_history.csv",
+    col_types = readr::cols(
+      FAC_PARTY_ID = readr::col_integer(),
+      last_vacancy_under36 = readr::col_date(),
+      last_vacancy_30mos_5yrs = readr::col_date(),
+      last_vacancy_licpre = readr::col_date(),
+      last_vacancy_gr1_age12 = readr::col_date(),
+      .default = readr::col_skip()
+    )
+  )
+  bccc <- dplyr::left_join(bccc, history, by = "FAC_PARTY_ID")
+} else {
+  bccc$last_vacancy_under36 <- NA_Date_
+  bccc$last_vacancy_30mos_5yrs <- NA_Date_
+  bccc$last_vacancy_licpre <- NA_Date_
+  bccc$last_vacancy_gr1_age12 <- NA_Date_
+}
 ```
 
 
@@ -43,6 +65,10 @@ bccc <- readr::read_csv(url)
 #| include: false
 # latest vacancy update
 dataset_last_update <- max(bccc$VACANCY_LAST_UPDATE, na.rm = TRUE)
+
+if (isTRUE(params$fast_render)) {
+  bccc <- bccc |> dplyr::filter(VACANCY_LAST_UPDATE >= dataset_last_update - 3)
+}
 
 tbl_data <- bccc |>
 
@@ -70,18 +96,39 @@ tbl_data <- bccc |>
   select(NAME, everything()) |>
 
   mutate(
+    lbl_under36 = if_else(
+      !is.na(last_vacancy_under36),
+      paste0(" (last seen ", format(last_vacancy_under36, "%Y-%m-%d"), ")"),
+      ""
+    ),
+    lbl_30mos = if_else(
+      !is.na(last_vacancy_30mos_5yrs),
+      paste0(" (last seen ", format(last_vacancy_30mos_5yrs, "%Y-%m-%d"), ")"),
+      ""
+    ),
+    lbl_licpre = if_else(
+      !is.na(last_vacancy_licpre),
+      paste0(" (last seen ", format(last_vacancy_licpre, "%Y-%m-%d"), ")"),
+      ""
+    ),
+    lbl_gr1 = if_else(
+      !is.na(last_vacancy_gr1_age12),
+      paste0(" (last seen ", format(last_vacancy_gr1_age12, "%Y-%m-%d"), ")"),
+      ""
+    ),
     popup = glue::glue(
       "<b>{NAME}</b>",
       "{SERVICE_TYPE_CD}",
       "{PHONE}",
       "<br>Vacancy:",
-      "&nbsp;&nbsp;&nbsp;&nbsp;<36 months: {VACANCY_SRVC_UNDER36}",
-      "&nbsp;&nbsp;&nbsp;&nbsp;30 months -- 5 years: {VACANCY_SRVC_30MOS_5YRS}",
-      "&nbsp;&nbsp;&nbsp;&nbsp;Preschool: {VACANCY_SRVC_LICPRE}",
-      "&nbsp;&nbsp;&nbsp;&nbsp;Grade 1 - Age 12: {VACANCY_SRVC_OOS_GR1_AGE12}",
+      "&nbsp;&nbsp;&nbsp;&nbsp;<36 months: {VACANCY_SRVC_UNDER36}{lbl_under36}",
+      "&nbsp;&nbsp;&nbsp;&nbsp;30 months - 5 years: {VACANCY_SRVC_30MOS_5YRS}{lbl_30mos}",
+      "&nbsp;&nbsp;&nbsp;&nbsp;Preschool: {VACANCY_SRVC_LICPRE}{lbl_licpre}",
+      "&nbsp;&nbsp;&nbsp;&nbsp;Grade 1 - Age 12: {VACANCY_SRVC_OOS_GR1_AGE12}{lbl_gr1}",
       .sep = "<br>"
     )
   ) |>
+  select(-starts_with("lbl_")) |>
 
   # crosstalk key
   mutate(id = row_number()) |>
@@ -380,15 +427,42 @@ row_details <- function(index, bccc) {
         df_field(
           "Vacancy type",
           reactable(
-            bccc |>
-              select(contains('VACANCY_SRVC_')) |>
-              pivot_longer(
-                everything(),
-                names_to = 'Age Group',
-                values_to = 'Vacancy?',
-                names_prefix = 'VACANCY_SRVC_'
-              ) |>
-              mutate(`Vacancy?` = ifelse(!is.na(`Vacancy?`), 'Y', 'N')),
+            tibble::tibble(
+              `Age Group` = c(
+                "Under 36 months",
+                "30 months - 5 years",
+                "Licensed Pre-school",
+                "Grade 1 - Age 12"
+              ),
+              `Vacancy?` = c(
+                ifelse(!is.na(bccc$VACANCY_SRVC_UNDER36), "Y", "N"),
+                ifelse(!is.na(bccc$VACANCY_SRVC_30MOS_5YRS), "Y", "N"),
+                ifelse(!is.na(bccc$VACANCY_SRVC_LICPRE), "Y", "N"),
+                ifelse(!is.na(bccc$VACANCY_SRVC_OOS_GR1_AGE12), "Y", "N")
+              ),
+              `Last vacancy` = c(
+                ifelse(
+                  is.na(bccc$last_vacancy_under36),
+                  "Never",
+                  format(bccc$last_vacancy_under36, "%Y-%m-%d")
+                ),
+                ifelse(
+                  is.na(bccc$last_vacancy_30mos_5yrs),
+                  "Never",
+                  format(bccc$last_vacancy_30mos_5yrs, "%Y-%m-%d")
+                ),
+                ifelse(
+                  is.na(bccc$last_vacancy_licpre),
+                  "Never",
+                  format(bccc$last_vacancy_licpre, "%Y-%m-%d")
+                ),
+                ifelse(
+                  is.na(bccc$last_vacancy_gr1_age12),
+                  "Never",
+                  format(bccc$last_vacancy_gr1_age12, "%Y-%m-%d")
+                )
+              )
+            ),
             pagination = FALSE,
             defaultColDef = colDef(headerClass = "header"),
             class = "vacancy-table",

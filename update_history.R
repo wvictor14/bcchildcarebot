@@ -11,13 +11,9 @@ HISTORY_COLS <- c(
   "FAC_PARTY_ID",
   "is_active",
   "date_first_seen",
-  "ever_vacancy_under36",
   "last_vacancy_under36",
-  "ever_vacancy_30mos_5yrs",
   "last_vacancy_30mos_5yrs",
-  "ever_vacancy_licpre",
   "last_vacancy_licpre",
-  "ever_vacancy_gr1_age12",
   "last_vacancy_gr1_age12"
 )
 
@@ -33,32 +29,20 @@ bootstrap_history <- function(
     mutate(
       is_active = TRUE,
       date_first_seen = NA_Date_,
-      ever_vacancy_under36 = if_else(VACANCY_SRVC_UNDER36 == "Y", TRUE, NA),
       last_vacancy_under36 = if_else(
         VACANCY_SRVC_UNDER36 == "Y",
         today,
         NA_Date_
-      ),
-      ever_vacancy_30mos_5yrs = if_else(
-        VACANCY_SRVC_30MOS_5YRS == "Y",
-        TRUE,
-        NA
       ),
       last_vacancy_30mos_5yrs = if_else(
         VACANCY_SRVC_30MOS_5YRS == "Y",
         today,
         NA_Date_
       ),
-      ever_vacancy_licpre = if_else(VACANCY_SRVC_LICPRE == "Y", TRUE, NA),
       last_vacancy_licpre = if_else(
         VACANCY_SRVC_LICPRE == "Y",
         today,
         NA_Date_
-      ),
-      ever_vacancy_gr1_age12 = if_else(
-        VACANCY_SRVC_OOS_GR1_AGE12 == "Y",
-        TRUE,
-        NA
       ),
       last_vacancy_gr1_age12 = if_else(
         VACANCY_SRVC_OOS_GR1_AGE12 == "Y",
@@ -84,32 +68,20 @@ add_new_facilities <- function(
     mutate(
       is_active = TRUE,
       date_first_seen = today,
-      ever_vacancy_under36 = if_else(VACANCY_SRVC_UNDER36 == "Y", TRUE, NA),
       last_vacancy_under36 = if_else(
         VACANCY_SRVC_UNDER36 == "Y",
         today,
         NA_Date_
-      ),
-      ever_vacancy_30mos_5yrs = if_else(
-        VACANCY_SRVC_30MOS_5YRS == "Y",
-        TRUE,
-        NA
       ),
       last_vacancy_30mos_5yrs = if_else(
         VACANCY_SRVC_30MOS_5YRS == "Y",
         today,
         NA_Date_
       ),
-      ever_vacancy_licpre = if_else(VACANCY_SRVC_LICPRE == "Y", TRUE, NA),
       last_vacancy_licpre = if_else(
         VACANCY_SRVC_LICPRE == "Y",
         today,
         NA_Date_
-      ),
-      ever_vacancy_gr1_age12 = if_else(
-        VACANCY_SRVC_OOS_GR1_AGE12 == "Y",
-        TRUE,
-        NA
       ),
       last_vacancy_gr1_age12 = if_else(
         VACANCY_SRVC_OOS_GR1_AGE12 == "Y",
@@ -139,40 +111,20 @@ update_vacancies <- function(
   history |>
     left_join(today_vac, by = "FAC_PARTY_ID") |>
     mutate(
-      ever_vacancy_under36 = if_else(
-        VACANCY_SRVC_UNDER36 == "Y",
-        TRUE,
-        ever_vacancy_under36
-      ),
       last_vacancy_under36 = if_else(
         VACANCY_SRVC_UNDER36 == "Y",
         today,
         last_vacancy_under36
-      ),
-      ever_vacancy_30mos_5yrs = if_else(
-        VACANCY_SRVC_30MOS_5YRS == "Y",
-        TRUE,
-        ever_vacancy_30mos_5yrs
       ),
       last_vacancy_30mos_5yrs = if_else(
         VACANCY_SRVC_30MOS_5YRS == "Y",
         today,
         last_vacancy_30mos_5yrs
       ),
-      ever_vacancy_licpre = if_else(
-        VACANCY_SRVC_LICPRE == "Y",
-        TRUE,
-        ever_vacancy_licpre
-      ),
       last_vacancy_licpre = if_else(
         VACANCY_SRVC_LICPRE == "Y",
         today,
         last_vacancy_licpre
-      ),
-      ever_vacancy_gr1_age12 = if_else(
-        VACANCY_SRVC_OOS_GR1_AGE12 == "Y",
-        TRUE,
-        ever_vacancy_gr1_age12
       ),
       last_vacancy_gr1_age12 = if_else(
         VACANCY_SRVC_OOS_GR1_AGE12 == "Y",
@@ -203,13 +155,9 @@ if (!testthat::is_testing()) {
         FAC_PARTY_ID = readr::col_integer(),
         is_active = readr::col_logical(),
         date_first_seen = readr::col_date(),
-        ever_vacancy_under36 = readr::col_logical(),
         last_vacancy_under36 = readr::col_date(),
-        ever_vacancy_30mos_5yrs = readr::col_logical(),
         last_vacancy_30mos_5yrs = readr::col_date(),
-        ever_vacancy_licpre = readr::col_logical(),
         last_vacancy_licpre = readr::col_date(),
-        ever_vacancy_gr1_age12 = readr::col_logical(),
         last_vacancy_gr1_age12 = readr::col_date()
       )
     )
