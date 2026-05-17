@@ -110,34 +110,28 @@ if (!testthat::is_testing()) {
     cli_progress_bar(
       "Searching DuckDuckGo",
       total = nrow(to_search),
-      format = "{cli::pb_bar} {cli::pb_current}/{cli::pb_total} | ETA: {cli::pb_eta}"
+      format = "{pb_bar} {pb_current}/{pb_total} | ETA: {pb_eta}"
     )
 
+    results <- vector("list", nrow(to_search))
     for (i in seq_len(nrow(to_search))) {
       fac_id <- to_search$FAC_PARTY_ID[[i]]
       bccc_row <- bccc |> dplyr::filter(FAC_PARTY_ID == fac_id)
       found_url <- search_duckduckgo(bccc_row$NAME[[1]], bccc_row$CITY[[1]])
 
-      urls <- urls |>
-        dplyr::mutate(
-          url = dplyr::if_else(FAC_PARTY_ID == fac_id, found_url, url),
-          url_source = dplyr::if_else(
-            FAC_PARTY_ID == fac_id & !is.na(found_url),
-            "duckduckgo",
-            url_source
-          ),
-          last_searched = dplyr::if_else(
-            FAC_PARTY_ID == fac_id,
-            today,
-            last_searched
-          )
-        )
+      results[[i]] <- tibble::tibble(
+        FAC_PARTY_ID = fac_id,
+        url = found_url,
+        url_source = if (!is.na(found_url)) "duckduckgo" else NA_character_,
+        last_searched = today
+      )
 
       cli_progress_update()
-      Sys.sleep(2)
+      if (i < nrow(to_search)) Sys.sleep(2)
     }
 
     cli_progress_done()
+    urls <- dplyr::rows_update(urls, dplyr::bind_rows(results), by = "FAC_PARTY_ID", unmatched = "error")
   }
 
   cli_alert_info("Writing {nrow(urls)} facilities to {.file {URLS_PATH}}")
