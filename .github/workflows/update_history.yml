@@ -1,0 +1,37 @@
+name: Update Vacancy History
+
+on:
+  schedule:
+    - cron: '10 15 * * *'  # 3:10 PM UTC, 30 min before publish.yml at 3:41 PM UTC
+  workflow_dispatch:
+
+jobs:
+  update-history:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.6.0'
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y libudunits2-dev libcurl4-openssl-dev libgdal-dev
+
+      - name: Install R dependencies
+        uses: r-lib/actions/setup-renv@v2
+
+      - name: Update vacancy history
+        run: Rscript update_history.R
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/vacancy_history.csv
+          git diff --staged --quiet || git commit -m "[skip ci] update vacancy history $(date -u +%Y-%m-%d)"
+          git push
