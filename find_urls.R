@@ -61,7 +61,10 @@ search_duckduckgo <- function(name, city) {
       ) |>
       httr2::req_timeout(10) |>
       httr2::req_perform(),
-    error = function(e) NULL
+    error = function(e) {
+      cli_warn("DuckDuckGo request failed for {name}, {city}: {e$message}")
+      NULL
+    }
   )
 
   if (is.null(resp)) return(NA_character_)
@@ -72,5 +75,5 @@ search_duckduckgo <- function(name, city) {
 
   href <- rvest::html_attr(first_link, "href")
   uddg <- regmatches(href, regexpr("(?<=uddg=)[^&]+", href, perl = TRUE))
-  if (length(uddg) == 1L) utils::URLdecode(uddg) else href
+  if (length(uddg) == 1L) utils::URLdecode(uddg) else NA_character_
 }
