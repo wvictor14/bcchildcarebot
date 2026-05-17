@@ -2,7 +2,7 @@ name: Find Facility URLs
 
 on:
   schedule:
-    - cron: '0 16 1 * *'  # 4:00 AM UTC on the 1st of each month
+    - cron: '0 16 1 * *'  # 4:00 PM UTC on the 1st of each month
   workflow_dispatch:
 
 jobs:
