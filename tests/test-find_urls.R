@@ -39,7 +39,7 @@ test_that("bootstrap_urls sets url to NA when WEBSITE is missing", {
   expect_true(is.na(result$url_source))
 })
 
-test_that("bootstrap_urls sets url to NA when WEBSITE is empty string", {
+test_that("bootstrap_urls sets url and url_source to NA when WEBSITE is empty string", {
   result <- bootstrap_urls(make_bccc(1L, website = ""))
   expect_true(is.na(result$url))
   expect_true(is.na(result$url_source))
