@@ -29,3 +29,21 @@ bootstrap_urls <- function(bccc) {
     ) |>
     select(all_of(URL_COLS))
 }
+
+add_new_facilities_urls <- function(urls, bccc) {
+  new_ids <- setdiff(bccc$FAC_PARTY_ID, urls$FAC_PARTY_ID)
+  if (length(new_ids) == 0L) {
+    return(urls)
+  }
+
+  new_rows <- bccc |>
+    filter(FAC_PARTY_ID %in% new_ids) |>
+    mutate(
+      url = if_else(!is.na(WEBSITE) & WEBSITE != "", WEBSITE, NA_character_),
+      url_source = if_else(!is.na(url), "bc_dataset", NA_character_),
+      last_searched = NA_Date_
+    ) |>
+    select(all_of(URL_COLS))
+
+  bind_rows(urls, new_rows)
+}

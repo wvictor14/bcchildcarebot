@@ -50,3 +50,46 @@ test_that("bootstrap_urls sets last_searched to NA for all rows", {
   result <- bootstrap_urls(bccc)
   expect_true(all(is.na(result$last_searched)))
 })
+
+# --- add_new_facilities_urls ---
+
+test_that("add_new_facilities_urls returns urls unchanged when no new facilities", {
+  bccc <- make_bccc(1L)
+  urls <- bootstrap_urls(bccc)
+  result <- add_new_facilities_urls(urls, bccc)
+  expect_equal(nrow(result), 1L)
+  expect_equal(result$FAC_PARTY_ID, 1L)
+})
+
+test_that("add_new_facilities_urls adds row for new facility not in urls", {
+  urls <- bootstrap_urls(make_bccc(1L))
+  bccc_new <- bind_rows(make_bccc(1L), make_bccc(2L))
+  result <- add_new_facilities_urls(urls, bccc_new)
+  expect_equal(nrow(result), 2L)
+  expect_true(2L %in% result$FAC_PARTY_ID)
+})
+
+test_that("add_new_facilities_urls seeds url from BC dataset for new facility with website", {
+  urls <- bootstrap_urls(make_bccc(1L))
+  bccc_new <- bind_rows(make_bccc(1L), make_bccc(2L, website = "https://new.ca"))
+  result <- add_new_facilities_urls(urls, bccc_new)
+  new_row <- filter(result, FAC_PARTY_ID == 2L)
+  expect_equal(new_row$url, "https://new.ca")
+  expect_equal(new_row$url_source, "bc_dataset")
+})
+
+test_that("add_new_facilities_urls sets url to NA for new facility without website", {
+  urls <- bootstrap_urls(make_bccc(1L))
+  bccc_new <- bind_rows(make_bccc(1L), make_bccc(2L))
+  result <- add_new_facilities_urls(urls, bccc_new)
+  new_row <- filter(result, FAC_PARTY_ID == 2L)
+  expect_true(is.na(new_row$url))
+  expect_true(is.na(new_row$url_source))
+  expect_true(is.na(new_row$last_searched))
+})
+
+test_that("add_new_facilities_urls preserves URL_COLS column order", {
+  urls <- bootstrap_urls(make_bccc(1L))
+  result <- add_new_facilities_urls(urls, bind_rows(make_bccc(1L), make_bccc(2L)))
+  expect_equal(names(result), URL_COLS)
+})
