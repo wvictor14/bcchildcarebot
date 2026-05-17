@@ -46,3 +46,31 @@ add_new_facilities_urls <- function(urls, bccc) {
 
   bind_rows(urls, new_rows)
 }
+
+search_duckduckgo <- function(name, city) {
+  query <- paste(name, "childcare", city, "BC")
+  url <- paste0(
+    "https://html.duckduckgo.com/html/?q=",
+    utils::URLencode(query, reserved = TRUE)
+  )
+
+  resp <- tryCatch(
+    httr2::request(url) |>
+      httr2::req_headers(
+        "User-Agent" = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+      ) |>
+      httr2::req_timeout(10) |>
+      httr2::req_perform(),
+    error = function(e) NULL
+  )
+
+  if (is.null(resp)) return(NA_character_)
+
+  html <- httr2::resp_body_html(resp)
+  first_link <- rvest::html_element(html, "a.result__a")
+  if (inherits(first_link, "xml_missing")) return(NA_character_)
+
+  href <- rvest::html_attr(first_link, "href")
+  uddg <- regmatches(href, regexpr("(?<=uddg=)[^&]+", href, perl = TRUE))
+  if (length(uddg) == 1L) utils::URLdecode(uddg) else href
+}
