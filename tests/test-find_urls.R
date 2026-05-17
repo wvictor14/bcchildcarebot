@@ -39,6 +39,12 @@ test_that("bootstrap_urls sets url to NA when WEBSITE is missing", {
   expect_true(is.na(result$url_source))
 })
 
+test_that("bootstrap_urls sets url to NA when WEBSITE is empty string", {
+  result <- bootstrap_urls(make_bccc(1L, website = ""))
+  expect_true(is.na(result$url))
+  expect_true(is.na(result$url_source))
+})
+
 test_that("bootstrap_urls sets last_searched to NA for all rows", {
   bccc <- bind_rows(make_bccc(1L, website = "https://example.com"), make_bccc(2L))
   result <- bootstrap_urls(bccc)
