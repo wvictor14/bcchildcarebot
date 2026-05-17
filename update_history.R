@@ -2,6 +2,7 @@ library(dplyr)
 library(readr)
 library(lubridate)
 library(cli)
+library(testthat)
 
 BCCC_URL <- "https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af5224646/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39/download/childcare_locations.csv"
 HISTORY_PATH <- "data/vacancy_history.csv"
@@ -26,7 +27,7 @@ fetch_bc_data <- function(url = BCCC_URL) {
 
 bootstrap_history <- function(
   bccc,
-  today = lubridate::today(tzone = "Canada/Pacific")
+  today = lubridate::today(tzone = "America/Vancouver")
 ) {
   bccc |>
     mutate(
@@ -71,7 +72,7 @@ bootstrap_history <- function(
 add_new_facilities <- function(
   history,
   bccc,
-  today = lubridate::today(tzone = "Canada/Pacific")
+  today = lubridate::today(tzone = "America/Vancouver")
 ) {
   new_ids <- setdiff(bccc$FAC_PARTY_ID, history$FAC_PARTY_ID)
   if (length(new_ids) == 0L) {
@@ -124,7 +125,7 @@ add_new_facilities <- function(
 update_vacancies <- function(
   history,
   bccc,
-  today = lubridate::today(tzone = "Canada/Pacific")
+  today = lubridate::today(tzone = "America/Vancouver")
 ) {
   today_vac <- bccc |>
     select(
@@ -188,7 +189,7 @@ update_active_status <- function(history, bccc) {
 }
 
 if (!testthat::is_testing()) {
-  today <- lubridate::today(tzone = "Canada/Pacific")
+  today <- lubridate::today(tzone = "America/Vancouver")
 
   cli_alert_info("Fetching BC childcare data for {today}...")
   bccc <- fetch_bc_data()
@@ -199,17 +200,17 @@ if (!testthat::is_testing()) {
     history <- readr::read_csv(
       HISTORY_PATH,
       col_types = readr::cols(
-        FAC_PARTY_ID            = readr::col_integer(),
-        is_active               = readr::col_logical(),
-        date_first_seen         = readr::col_date(),
-        ever_vacancy_under36    = readr::col_logical(),
-        last_vacancy_under36    = readr::col_date(),
+        FAC_PARTY_ID = readr::col_integer(),
+        is_active = readr::col_logical(),
+        date_first_seen = readr::col_date(),
+        ever_vacancy_under36 = readr::col_logical(),
+        last_vacancy_under36 = readr::col_date(),
         ever_vacancy_30mos_5yrs = readr::col_logical(),
         last_vacancy_30mos_5yrs = readr::col_date(),
-        ever_vacancy_licpre     = readr::col_logical(),
-        last_vacancy_licpre     = readr::col_date(),
-        ever_vacancy_gr1_age12  = readr::col_logical(),
-        last_vacancy_gr1_age12  = readr::col_date()
+        ever_vacancy_licpre = readr::col_logical(),
+        last_vacancy_licpre = readr::col_date(),
+        ever_vacancy_gr1_age12 = readr::col_logical(),
+        last_vacancy_gr1_age12 = readr::col_date()
       )
     )
     cli_alert_success("{nrow(history)} facilities in history.")
@@ -217,7 +218,9 @@ if (!testthat::is_testing()) {
     history <- update_vacancies(history, bccc, today)
     history <- update_active_status(history, bccc)
   } else {
-    cli_alert_warning("No history file found — bootstrapping from today's data...")
+    cli_alert_warning(
+      "No history file found — bootstrapping from today's data..."
+    )
     history <- bootstrap_history(bccc, today)
   }
 
