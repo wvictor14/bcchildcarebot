@@ -77,3 +77,70 @@ search_duckduckgo <- function(name, city) {
   uddg <- regmatches(href, regexpr("(?<=uddg=)[^&]+", href, perl = TRUE))
   if (length(uddg) == 1L) utils::URLdecode(uddg) else NA_character_
 }
+
+if (!testthat::is_testing()) {
+  today <- lubridate::today(tzone = "America/Vancouver")
+
+  cli_alert_info("Fetching BC childcare data...")
+  bccc <- fetch_bc_data()
+  cli_alert_success("{nrow(bccc)} facilities in today's pull.")
+
+  if (file.exists(URLS_PATH)) {
+    cli_alert_info("Reading existing URL file...")
+    urls <- readr::read_csv(
+      URLS_PATH,
+      col_types = readr::cols(
+        FAC_PARTY_ID = readr::col_integer(),
+        url = readr::col_character(),
+        url_source = readr::col_character(),
+        last_searched = readr::col_date()
+      )
+    )
+    cli_alert_success("{nrow(urls)} facilities in URL file.")
+    urls <- add_new_facilities_urls(urls, bccc)
+  } else {
+    cli_alert_warning("No URL file found — bootstrapping from BC dataset...")
+    urls <- bootstrap_urls(bccc)
+  }
+
+  to_search <- urls |> dplyr::filter(is.na(url))
+  cli_alert_info("{nrow(to_search)} facilities need URL lookup.")
+
+  if (nrow(to_search) > 0L) {
+    cli_progress_bar(
+      "Searching DuckDuckGo",
+      total = nrow(to_search),
+      format = "{cli::pb_bar} {cli::pb_current}/{cli::pb_total} | ETA: {cli::pb_eta}"
+    )
+
+    for (i in seq_len(nrow(to_search))) {
+      fac_id <- to_search$FAC_PARTY_ID[[i]]
+      bccc_row <- bccc |> dplyr::filter(FAC_PARTY_ID == fac_id)
+      found_url <- search_duckduckgo(bccc_row$NAME[[1]], bccc_row$CITY[[1]])
+
+      urls <- urls |>
+        dplyr::mutate(
+          url = dplyr::if_else(FAC_PARTY_ID == fac_id, found_url, url),
+          url_source = dplyr::if_else(
+            FAC_PARTY_ID == fac_id & !is.na(found_url),
+            "duckduckgo",
+            url_source
+          ),
+          last_searched = dplyr::if_else(
+            FAC_PARTY_ID == fac_id,
+            today,
+            last_searched
+          )
+        )
+
+      cli_progress_update()
+      Sys.sleep(2)
+    }
+
+    cli_progress_done()
+  }
+
+  cli_alert_info("Writing {nrow(urls)} facilities to {.file {URLS_PATH}}")
+  readr::write_csv(urls, URLS_PATH)
+  cli_alert_success("Done.")
+}
