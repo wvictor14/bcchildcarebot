@@ -62,7 +62,7 @@ search_duckduckgo <- function(name, city) {
       httr2::req_timeout(10) |>
       httr2::req_perform(),
     error = function(e) {
-      cli_warn("DuckDuckGo request failed for {name}, {city}: {e$message}")
+      cli_warn("DuckDuckGo request failed for {name}, {city}: {conditionMessage(e)}")
       NULL
     }
   )
@@ -103,7 +103,7 @@ if (!testthat::is_testing()) {
     urls <- bootstrap_urls(bccc)
   }
 
-  to_search <- urls |> dplyr::filter(is.na(url))
+  to_search <- urls |> filter(is.na(url) & is.na(last_searched))
   cli_alert_info("{nrow(to_search)} facilities need URL lookup.")
 
   if (nrow(to_search) > 0L) {
@@ -116,7 +116,7 @@ if (!testthat::is_testing()) {
     results <- vector("list", nrow(to_search))
     for (i in seq_len(nrow(to_search))) {
       fac_id <- to_search$FAC_PARTY_ID[[i]]
-      bccc_row <- bccc |> dplyr::filter(FAC_PARTY_ID == fac_id)
+      bccc_row <- bccc |> filter(FAC_PARTY_ID == fac_id)
       found_url <- search_duckduckgo(bccc_row$NAME[[1]], bccc_row$CITY[[1]])
 
       results[[i]] <- tibble::tibble(
@@ -131,7 +131,7 @@ if (!testthat::is_testing()) {
     }
 
     cli_progress_done()
-    urls <- dplyr::rows_update(urls, dplyr::bind_rows(results), by = "FAC_PARTY_ID", unmatched = "error")
+    urls <- rows_update(urls, bind_rows(results), by = "FAC_PARTY_ID", unmatched = "error")
   }
 
   cli_alert_info("Writing {nrow(urls)} facilities to {.file {URLS_PATH}}")

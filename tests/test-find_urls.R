@@ -102,3 +102,52 @@ test_that("add_new_facilities_urls sets url to NA for new facility with empty st
   expect_true(is.na(new_row$url))
   expect_true(is.na(new_row$url_source))
 })
+
+# --- search_duckduckgo ---
+
+make_ddg_html <- function(href = NULL) {
+  if (is.null(href)) {
+    "<html><body><p>No results.</p></body></html>"
+  } else {
+    sprintf('<html><body><a class="result__a" href="%s">Result</a></body></html>', href)
+  }
+}
+
+make_ddg_response <- function(html) {
+  httr2::response(
+    status_code = 200,
+    headers = list("content-type" = "text/html; charset=UTF-8"),
+    body = charToRaw(html)
+  )
+}
+
+test_that("search_duckduckgo returns decoded URL from uddg parameter", {
+  href <- "//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fdaycare&rut=abc"
+  mock_resp <- make_ddg_response(make_ddg_html(href))
+  result <- httr2::with_mocked_responses(list(mock_resp), search_duckduckgo("Happy Kids", "Vancouver"))
+  expect_equal(result, "https://example.com/daycare")
+})
+
+test_that("search_duckduckgo returns NA when no results found", {
+  mock_resp <- make_ddg_response(make_ddg_html())
+  result <- httr2::with_mocked_responses(list(mock_resp), search_duckduckgo("Nonexistent Place", "Nowhere"))
+  expect_true(is.na(result))
+})
+
+test_that("search_duckduckgo returns NA when href has no uddg parameter", {
+  href <- "//duckduckgo.com/l/?someotherparam=value"
+  mock_resp <- make_ddg_response(make_ddg_html(href))
+  result <- httr2::with_mocked_responses(list(mock_resp), search_duckduckgo("Test", "Vancouver"))
+  expect_true(is.na(result))
+})
+
+test_that("search_duckduckgo returns NA on network error and emits warning", {
+  expect_warning(
+    result <- httr2::with_mocked_responses(
+      function(req) stop("Network error"),
+      search_duckduckgo("Test", "Vancouver")
+    ),
+    regexp = "DuckDuckGo request failed"
+  )
+  expect_true(is.na(result))
+})
