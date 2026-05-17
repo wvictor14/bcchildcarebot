@@ -20,14 +20,18 @@ fetch_bc_data <- function(url = BCCC_URL) {
   readr::read_csv(url, show_col_types = FALSE)
 }
 
-bootstrap_urls <- function(bccc) {
-  bccc |>
+.seed_url_cols <- function(bccc_subset) {
+  bccc_subset |>
     mutate(
       url = if_else(!is.na(WEBSITE) & WEBSITE != "", WEBSITE, NA_character_),
       url_source = if_else(!is.na(url), "bc_dataset", NA_character_),
       last_searched = NA_Date_
     ) |>
     select(all_of(URL_COLS))
+}
+
+bootstrap_urls <- function(bccc) {
+  .seed_url_cols(bccc)
 }
 
 add_new_facilities_urls <- function(urls, bccc) {
@@ -38,12 +42,7 @@ add_new_facilities_urls <- function(urls, bccc) {
 
   new_rows <- bccc |>
     filter(FAC_PARTY_ID %in% new_ids) |>
-    mutate(
-      url = if_else(!is.na(WEBSITE) & WEBSITE != "", WEBSITE, NA_character_),
-      url_source = if_else(!is.na(url), "bc_dataset", NA_character_),
-      last_searched = NA_Date_
-    ) |>
-    select(all_of(URL_COLS))
+    .seed_url_cols()
 
   bind_rows(urls, new_rows)
 }

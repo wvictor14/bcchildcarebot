@@ -93,3 +93,12 @@ test_that("add_new_facilities_urls preserves URL_COLS column order", {
   result <- add_new_facilities_urls(urls, bind_rows(make_bccc(1L), make_bccc(2L)))
   expect_equal(names(result), URL_COLS)
 })
+
+test_that("add_new_facilities_urls sets url to NA for new facility with empty string website", {
+  urls <- bootstrap_urls(make_bccc(1L))
+  bccc_new <- bind_rows(make_bccc(1L), make_bccc(2L, website = ""))
+  result <- add_new_facilities_urls(urls, bccc_new)
+  new_row <- filter(result, FAC_PARTY_ID == 2L)
+  expect_true(is.na(new_row$url))
+  expect_true(is.na(new_row$url_source))
+})
