@@ -179,7 +179,7 @@ if (!testthat::is_testing()) {
         .build_ddg_request(row$NAME[[1]], row$CITY[[1]])
       })
 
-      resps <- httr2::req_perform_parallel(reqs, max_active = DDG_POOL, on_error = "continue")
+      resps <- httr2::req_perform_parallel(reqs, max_active = DDG_POOL, on_error = "continue", progress = FALSE)
 
       results <- lapply(seq_len(nrow(batch)), function(i) {
         found_url <- .parse_ddg_response(resps[[i]])
