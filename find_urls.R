@@ -32,7 +32,7 @@ library(testthat)
 
 BCCC_URL <- "https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af5224646/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39/download/childcare_locations.csv"
 URLS_PATH <- "data/facility_urls.csv"
-DDG_POOL <- 20L        # concurrent requests; reduce if DDG starts blocking
+DDG_POOL <- 20L        # max_active concurrent requests; reduce if DDG starts blocking
 DDG_BATCH_SIZE <- 100L # facilities per write checkpoint
 DDG_RETRY_DAYS <- 150L # days before re-searching a facility that returned NA
 
@@ -179,7 +179,7 @@ if (!testthat::is_testing()) {
         .build_ddg_request(row$NAME[[1]], row$CITY[[1]])
       })
 
-      resps <- httr2::req_perform_parallel(reqs, pool = DDG_POOL, cancel_on_error = FALSE)
+      resps <- httr2::req_perform_parallel(reqs, max_active = DDG_POOL, on_error = "continue")
 
       results <- lapply(seq_len(nrow(batch)), function(i) {
         found_url <- .parse_ddg_response(resps[[i]])
