@@ -87,7 +87,7 @@ add_new_facilities_urls <- function(urls, bccc) {
 # req_error(is_error = FALSE) prevents httr2 from throwing on non-2xx responses
 # so req_perform_parallel can collect all results instead of stopping on error.
 .build_ddg_request <- function(name, city) {
-  query <- paste(name, "childcare", city, "BC")
+  query <- paste(name, city, "British Columbia")
   url <- paste0(
     "https://html.duckduckgo.com/html/?q=",
     utils::URLencode(query, reserved = TRUE)
