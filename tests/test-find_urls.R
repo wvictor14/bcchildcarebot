@@ -103,8 +103,6 @@ test_that("add_new_facilities_urls sets url to NA for new facility with empty st
   expect_true(is.na(new_row$url_source))
 })
 
-# --- search_duckduckgo ---
-
 make_ddg_html <- function(href = NULL) {
   if (is.null(href)) {
     "<html><body><p>No results.</p></body></html>"
@@ -120,6 +118,35 @@ make_ddg_response <- function(html) {
     body = charToRaw(html)
   )
 }
+
+# --- .parse_ddg_response ---
+
+test_that(".parse_ddg_response returns decoded URL from uddg parameter", {
+  href <- "//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fdaycare&rut=abc"
+  resp <- make_ddg_response(make_ddg_html(href))
+  expect_equal(.parse_ddg_response(resp), "https://example.com/daycare")
+})
+
+test_that(".parse_ddg_response returns NA when no result link", {
+  resp <- make_ddg_response(make_ddg_html())
+  expect_true(is.na(.parse_ddg_response(resp)))
+})
+
+test_that(".parse_ddg_response returns NA when href has no uddg parameter", {
+  href <- "//duckduckgo.com/l/?someotherparam=value"
+  resp <- make_ddg_response(make_ddg_html(href))
+  expect_true(is.na(.parse_ddg_response(resp)))
+})
+
+test_that(".parse_ddg_response returns NA for NULL input", {
+  expect_true(is.na(.parse_ddg_response(NULL)))
+})
+
+test_that(".parse_ddg_response returns NA for error input", {
+  expect_true(is.na(.parse_ddg_response(structure(list(), class = "error"))))
+})
+
+# --- search_duckduckgo ---
 
 test_that("search_duckduckgo returns decoded URL from uddg parameter", {
   href <- "//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fdaycare&rut=abc"
