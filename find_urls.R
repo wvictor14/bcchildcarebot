@@ -32,9 +32,9 @@ library(testthat)
 
 BCCC_URL <- "https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af5224646/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39/download/childcare_locations.csv"
 URLS_PATH <- "data/facility_urls.csv"
-DDG_POOL <- 20L        # max_active concurrent requests; reduce if DDG starts blocking
-DDG_BATCH_SIZE <- 100L # facilities per write checkpoint
-DDG_RETRY_DAYS <- 150L # days before re-searching a facility that returned NA
+DDG_POOL       <- as.integer(Sys.getenv("DDG_POOL",       "20"))  # max_active concurrent requests; reduce if DDG starts blocking
+DDG_BATCH_SIZE <- as.integer(Sys.getenv("DDG_BATCH_SIZE", "100")) # facilities per write checkpoint
+DDG_RETRY_DAYS <- as.integer(Sys.getenv("DDG_RETRY_DAYS", "150")) # days before re-searching a facility that returned NA
 
 URL_COLS <- c(
   "FAC_PARTY_ID",
