@@ -116,10 +116,14 @@ tbl_data <- bccc |>
       paste0(" (last seen ", format(last_vacancy_gr1_age12, "%Y-%m-%d"), ")"),
       ""
     ),
+    maps_query = paste0(NAME, ", ", ADDRESS_1, ", ", CITY),
+    maps_url = paste0("https://www.google.com/maps/search/", URLencode(maps_query)),
     popup = glue::glue(
       "<b>{NAME}</b>",
       "{SERVICE_TYPE_CD}",
+      "{ADDRESS_1}",
       "{PHONE}",
+      "<a href='{maps_url}' target='_blank'>View on Google Maps</a>",
       "<br>Vacancy:",
       "&nbsp;&nbsp;&nbsp;&nbsp;<36 months: {VACANCY_SRVC_UNDER36}{lbl_under36}",
       "&nbsp;&nbsp;&nbsp;&nbsp;30 months - 5 years: {VACANCY_SRVC_30MOS_5YRS}{lbl_30mos}",
@@ -405,6 +409,14 @@ row_details <- function(index, bccc) {
         df_field("Address", bccc$ADDRESS_1),
         df_field('Address 2', bccc$ADDRESS_2),
         df_field('City', bccc$CITY),
+        df_field(
+          'Google Maps',
+          htmltools::a(
+            "View on Google Maps",
+            href = paste0("https://www.google.com/maps/search/", URLencode(paste0(bccc$NAME, ", ", bccc$ADDRESS_1, ", ", bccc$CITY))),
+            target = "_blank"
+          )
+        ),
         df_field('ECE_CERTIFICATION_YN', bccc$ECE_CERTIFICATION_YN),
         df_field('ELF', bccc$ELF_PROGRAMMING_YN),
         df_field('IS_INCOMPLETE_IND', bccc$IS_INCOMPLETE_IND),
@@ -520,6 +532,8 @@ hide <- tbl_data |>
     IS_INCOMPLETE_IND,
     IS_CCFRI_AUTH,
     popup,
+    maps_query,
+    maps_url,
     contains('LANG_')
   ) |>
   colnames() %>%
