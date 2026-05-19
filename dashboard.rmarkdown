@@ -319,9 +319,9 @@ $(document).ready(filter_default);
 
 ## Row
 
-Last date that this page has been updated: `{r} .today`
+Last date that this page has been updated: `r .QuartoInlineRender(.today)`
 
-Last date that BC updated dataset: `{r} dataset_last_update`
+Last date that BC updated dataset: `r .QuartoInlineRender(dataset_last_update)`
 
 Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
 
