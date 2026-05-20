@@ -54,15 +54,35 @@ Key R libraries:
 - **Process**: Renders dashboard.qmd → publishes to gh-pages branch
 - **Deployment**: Accessible at https://victoryuan.com/bcchildcarebot/
 
-## Data Source
+**update_history.yml**
+- **Trigger**: Daily at 3:10 PM UTC (30 min before publish)
+- **Process**: Runs `update_history.R` → commits updated `data/vacancy_history.csv`
 
+**find_urls.yml**
+- **Trigger**: Monthly on the 1st at 4:00 PM UTC, manual dispatch
+- **Process**: Runs `find_urls.R` → commits updated `data/facility_urls.csv`
+- **Tuning**: Set `DDG_THROTTLE_SECS`, `DDG_BATCH_SIZE`, `DDG_RETRY_DAYS`, `DDG_MAX_RUNTIME_SECS`, `DDG_MAX_CONSEC_BLOCKS` env vars to adjust behaviour. Requests run sequentially with throttling because DDG's HTML endpoint returns anti-bot challenge pages (HTTP 202) under burst load. Blocked responses are NOT marked `last_searched`, so they retry next run instead of being locked out for `DDG_RETRY_DAYS`.
+
+## Data Files
+
+**BC government source**
 - **URL**: https://catalogue.data.gov.bc.ca/dataset/.../childcare_locations.csv
 - **Update Frequency**: BC government publishes data regularly; dashboard renders on schedule
 - **Key Columns**:
   - `VACANCY_LAST_UPDATE`: Last timestamp of vacancy status change
   - `VACANCY_SRVC_UNDER36`, `VACANCY_SRVC_30MOS_5YRS`, etc.: Vacancy flags by age group
-  - `CITY`, `NAME`, `PHONE`: Facility contact info
+  - `CITY`, `NAME`, `PHONE`, `WEBSITE`: Facility contact info
   - `LATITUDE`, `LONGITUDE`: Map coordinates
+
+**data/vacancy_history.csv** — one row per facility, updated daily
+- Tracks `last_vacancy_*` dates and `ever_vacancy_*` flags per age group
+- Updated by `update_history.R`
+
+**data/facility_urls.csv** — one row per facility, updated monthly
+- Stores `url`, `url_source` (`bc_dataset` or `duckduckgo`), `last_searched`
+- Seeded from BC dataset `WEBSITE` field; gaps filled via DuckDuckGo HTML scraping
+- Facilities with no URL are re-searched after `DDG_RETRY_DAYS` days (default 150)
+- Updated by `find_urls.R`; run manually with `Rscript find_urls.R`
 
 ## Code Style Notes
 

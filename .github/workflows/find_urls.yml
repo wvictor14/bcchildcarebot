@@ -1,0 +1,37 @@
+name: Find Facility URLs
+
+on:
+  schedule:
+    - cron: '0 16 1 * *'  # 4:00 PM UTC on the 1st of each month
+  workflow_dispatch:
+
+jobs:
+  find-urls:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.6.0'
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y libudunits2-dev libcurl4-openssl-dev libgdal-dev
+
+      - name: Install R dependencies
+        uses: r-lib/actions/setup-renv@v2
+
+      - name: Find facility URLs
+        run: Rscript find_urls.R
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/facility_urls.csv
+          git diff --staged --quiet || git commit -m "[skip ci] update facility URLs $(date -u +%Y-%m-%d)"
+          git push

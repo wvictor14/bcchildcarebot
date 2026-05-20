@@ -18,6 +18,7 @@ In addition to the daily snapshot, this repo tracks per-facility vacancy history
 
 The history file is updated daily by a separate GitHub Action (`update_history.yml`) that runs 30 minutes before the dashboard publishes. It tracks one row per facility with these fields:
 
+
 | Column | Description |
 |---|---|
 | `FAC_PARTY_ID` | Unique facility identifier |
@@ -31,3 +32,38 @@ The history file is updated daily by a separate GitHub Action (`update_history.y
 | `last_vacancy_licpre` | Most recent date vacancy was open for licensed preschool |
 | `ever_vacancy_gr1_age12` | Has ever had a vacancy for grade 1 to age 12 |
 | `last_vacancy_gr1_age12` | Most recent date vacancy was open for grade 1 to age 12 |
+
+## Facility URLs
+
+`data/facility_urls.csv` stores website URLs for each facility, seeded from the BC dataset's `WEBSITE` field and supplemented by DuckDuckGo search for facilities without one. It tracks one row per facility:
+
+| Column | Description |
+|---|---|
+| `FAC_PARTY_ID` | Unique facility identifier |
+| `url` | Website URL (`NA` if not found) |
+| `url_source` | `"bc_dataset"` if from BC data, `"duckduckgo"` if found via search |
+| `last_searched` | Date DuckDuckGo was last queried for this facility |
+
+The file is updated monthly by `find_urls.yml`. Facilities with no URL are re-searched after 150 days in case a website has since appeared.
+
+**Running manually:**
+
+```bash
+Rscript find_urls.R
+```
+
+**Tuning parameters** (set as environment variables):
+
+| Variable | Default | Description |
+|---|---|---|
+| `DDG_THROTTLE_SECS` | `3` | Seconds between sequential DuckDuckGo requests; lower = faster but more likely to trigger rate limiting |
+| `DDG_BATCH_SIZE` | `100` | Facilities per write checkpoint; lower = more frequent saves |
+| `DDG_RETRY_DAYS` | `150` | Days before re-searching a facility that previously returned no URL |
+| `DDG_MAX_RUNTIME_SECS` | `18000` | Wall-clock budget (5h). Script checkpoints and exits cleanly when reached, so the monthly cron stays under the GHA 6h job limit |
+| `DDG_MAX_CONSEC_BLOCKS` | `20` | Abort the run after this many consecutive blocked responses (DDG is rate-limiting our IP); the next run will resume |
+
+Blocked responses (DDG anti-bot pages, non-200 status, transport errors) do not update `last_searched`, so affected facilities are retried on the next run rather than locked out for `DDG_RETRY_DAYS` days.
+
+```bash
+DDG_THROTTLE_SECS=5 Rscript find_urls.R
+```
