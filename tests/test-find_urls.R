@@ -111,9 +111,9 @@ make_ddg_html <- function(href = NULL) {
   }
 }
 
-make_ddg_response <- function(html) {
+make_ddg_response <- function(html, status_code = 200L) {
   httr2::response(
-    status_code = 200,
+    status_code = status_code,
     headers = list("content-type" = "text/html; charset=UTF-8"),
     body = charToRaw(html)
   )
@@ -121,29 +121,51 @@ make_ddg_response <- function(html) {
 
 # --- .parse_ddg_response ---
 
-test_that(".parse_ddg_response returns decoded URL from uddg parameter", {
+test_that(".parse_ddg_response returns found status with decoded URL", {
   href <- "//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fdaycare&rut=abc"
   resp <- make_ddg_response(make_ddg_html(href))
-  expect_equal(.parse_ddg_response(resp), "https://example.com/daycare")
+  result <- .parse_ddg_response(resp)
+  expect_equal(result$status, "found")
+  expect_equal(result$url, "https://example.com/daycare")
 })
 
-test_that(".parse_ddg_response returns NA when no result link", {
+test_that(".parse_ddg_response returns blocked when no result link present (could be a challenge page)", {
   resp <- make_ddg_response(make_ddg_html())
-  expect_true(is.na(.parse_ddg_response(resp)))
+  result <- .parse_ddg_response(resp)
+  expect_equal(result$status, "blocked")
+  expect_true(is.na(result$url))
 })
 
-test_that(".parse_ddg_response returns NA when href has no uddg parameter", {
+test_that(".parse_ddg_response returns no_results when result link is present but has no uddg parameter", {
   href <- "//duckduckgo.com/l/?someotherparam=value"
   resp <- make_ddg_response(make_ddg_html(href))
-  expect_true(is.na(.parse_ddg_response(resp)))
+  result <- .parse_ddg_response(resp)
+  expect_equal(result$status, "no_results")
+  expect_true(is.na(result$url))
 })
 
-test_that(".parse_ddg_response returns NA for NULL input", {
-  expect_true(is.na(.parse_ddg_response(NULL)))
+test_that(".parse_ddg_response returns blocked for NULL input", {
+  result <- .parse_ddg_response(NULL)
+  expect_equal(result$status, "blocked")
+  expect_true(is.na(result$url))
 })
 
-test_that(".parse_ddg_response returns NA for error input", {
-  expect_true(is.na(.parse_ddg_response(structure(list(), class = "error"))))
+test_that(".parse_ddg_response returns blocked for error input", {
+  result <- .parse_ddg_response(structure(list(), class = "error"))
+  expect_equal(result$status, "blocked")
+  expect_true(is.na(result$url))
+})
+
+test_that(".parse_ddg_response returns blocked for non-200 status (DDG anti-bot 202/429)", {
+  href <- "//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2F"
+  resp_202 <- make_ddg_response(make_ddg_html(href), status_code = 202L)
+  result_202 <- .parse_ddg_response(resp_202)
+  expect_equal(result_202$status, "blocked")
+  expect_true(is.na(result_202$url))
+
+  resp_429 <- make_ddg_response(make_ddg_html(href), status_code = 429L)
+  result_429 <- .parse_ddg_response(resp_429)
+  expect_equal(result_429$status, "blocked")
 })
 
 # --- search_duckduckgo ---

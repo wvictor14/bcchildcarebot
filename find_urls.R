@@ -11,16 +11,25 @@
 # facilities searched within the last DDG_RETRY_DAYS days. Re-searches
 # older NA results in case a daycare has since built a website.
 #
-# Results are written to disk after every DDG_BATCH_SIZE facilities so the
-# script can be interrupted and resumed without losing progress.
+# Requests are throttled and run sequentially because DDG's HTML endpoint
+# returns anti-bot challenge pages (HTTP 202) under burst load. Results are
+# written to disk every DDG_BATCH_SIZE facilities so the script can be
+# interrupted and resumed without losing progress. Facilities whose request
+# is blocked (non-200, missing result markup) are NOT marked last_searched,
+# so they're retried on the next run rather than locked out for DDG_RETRY_DAYS.
 #
 # Tuning knobs:
-#   DDG_POOL        — concurrent DuckDuckGo requests per batch. Higher = faster
-#                     but more likely to trigger rate limiting.
-#   DDG_BATCH_SIZE  — facilities per write checkpoint. Lower = more frequent
-#                     saves, slightly more disk I/O.
-#   DDG_RETRY_DAYS  — days before re-searching a facility that previously
-#                     returned no URL. Set higher to reduce redundant searches.
+#   DDG_THROTTLE_SECS     — seconds between DuckDuckGo requests. Lower = faster
+#                           but more likely to trigger rate limiting.
+#   DDG_BATCH_SIZE        — facilities per write checkpoint. Lower = more frequent
+#                           saves, slightly more disk I/O.
+#   DDG_RETRY_DAYS        — days before re-searching a facility that previously
+#                           returned no URL. Set higher to reduce redundant searches.
+#   DDG_MAX_RUNTIME_SECS  — wall-clock budget for the search loop. Script
+#                           checkpoints and exits cleanly when reached so the
+#                           monthly cron stays under the GHA 6h job limit.
+#   DDG_MAX_CONSEC_BLOCKS — abort the run after this many consecutive blocked
+#                           responses (DDG is rate-limiting our IP).
 
 library(dplyr)
 library(readr)
@@ -32,9 +41,11 @@ library(testthat)
 
 BCCC_URL <- "https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af5224646/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39/download/childcare_locations.csv"
 URLS_PATH <- "data/facility_urls.csv"
-DDG_POOL       <- as.integer(Sys.getenv("DDG_POOL",       "20"))  # max_active concurrent requests; reduce if DDG starts blocking
-DDG_BATCH_SIZE <- as.integer(Sys.getenv("DDG_BATCH_SIZE", "100")) # facilities per write checkpoint
-DDG_RETRY_DAYS <- as.integer(Sys.getenv("DDG_RETRY_DAYS", "150")) # days before re-searching a facility that returned NA
+DDG_THROTTLE_SECS     <- as.numeric(Sys.getenv("DDG_THROTTLE_SECS",     "3"))    # seconds between sequential DDG requests
+DDG_BATCH_SIZE        <- as.integer(Sys.getenv("DDG_BATCH_SIZE",        "100"))  # facilities per write checkpoint
+DDG_RETRY_DAYS        <- as.integer(Sys.getenv("DDG_RETRY_DAYS",        "150"))  # days before re-searching a facility that returned NA
+DDG_MAX_RUNTIME_SECS  <- as.numeric(Sys.getenv("DDG_MAX_RUNTIME_SECS",  "18000")) # 5h, leaves headroom under GHA 6h job limit
+DDG_MAX_CONSEC_BLOCKS <- as.integer(Sys.getenv("DDG_MAX_CONSEC_BLOCKS", "20"))   # abort after this many consecutive blocked responses
 
 URL_COLS <- c(
   "FAC_PARTY_ID",
@@ -84,8 +95,10 @@ add_new_facilities_urls <- function(urls, bccc) {
 
 # Builds a DuckDuckGo HTML search request for a single facility.
 # Uses the plain HTML endpoint (not the JS app) so rvest can parse results.
-# req_error(is_error = FALSE) prevents httr2 from throwing on non-2xx responses
-# so req_perform_parallel can collect all results instead of stopping on error.
+# req_throttle enforces DDG_THROTTLE_SECS between requests in the "duckduckgo"
+# realm, even across many request objects, to avoid triggering rate limits.
+# req_error(is_error = FALSE) lets the parser see the raw response so it can
+# distinguish "no results" from "blocked by anti-bot".
 .build_ddg_request <- function(name, city) {
   query <- paste(name, city, "British Columbia daycare childcare preschool")
   url <- paste0(
@@ -97,24 +110,43 @@ add_new_facilities_urls <- function(urls, bccc) {
       "User-Agent" = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
     ) |>
     httr2::req_timeout(10) |>
+    httr2::req_throttle(rate = 1 / DDG_THROTTLE_SECS, realm = "duckduckgo") |>
     httr2::req_error(is_error = \(resp) FALSE)
 }
 
-# Extracts the destination URL from a DuckDuckGo HTML response.
-# DDG wraps outbound links as //duckduckgo.com/l/?uddg=<encoded-url>&...,
-# so we pull the uddg parameter rather than using the raw href.
+# Classifies a DuckDuckGo HTML response and extracts the first result URL.
+# Returns list(url, status) where status is one of:
+#   "found"      - a result URL was extracted
+#   "no_results" - DDG responded normally but had no parseable result links
+#   "blocked"    - non-200 status, transport error, or anti-bot challenge page
+# The caller MUST treat "blocked" specially: do not record last_searched, so
+# the facility is retried next run rather than locked out for DDG_RETRY_DAYS.
 .parse_ddg_response <- function(resp) {
-  if (is.null(resp) || inherits(resp, "error")) return(NA_character_)
+  if (is.null(resp) || inherits(resp, "error")) {
+    return(list(url = NA_character_, status = "blocked"))
+  }
+  if (httr2::resp_status(resp) != 200L) {
+    return(list(url = NA_character_, status = "blocked"))
+  }
   html <- httr2::resp_body_html(resp)
   first_link <- rvest::html_element(html, "a.result__a")
-  if (inherits(first_link, "xml_missing")) return(NA_character_)
+  if (inherits(first_link, "xml_missing")) {
+    # 200 OK but no result markup. Could be a genuine zero-result page or a
+    # disguised challenge page; either way we can't extract a URL. Treat as
+    # blocked to be safe — better to re-search than to lock out for 150 days.
+    return(list(url = NA_character_, status = "blocked"))
+  }
   href <- rvest::html_attr(first_link, "href")
   uddg <- regmatches(href, regexpr("(?<=uddg=)[^&]+", href, perl = TRUE))
-  if (length(uddg) == 1L) utils::URLdecode(uddg) else NA_character_
+  if (length(uddg) != 1L) {
+    return(list(url = NA_character_, status = "no_results"))
+  }
+  list(url = utils::URLdecode(uddg), status = "found")
 }
 
-# Convenience wrapper used in tests and one-off lookups. The main script
-# uses .build_ddg_request + req_perform_parallel for parallel batch execution.
+# Convenience wrapper used in tests and one-off lookups. Returns the URL
+# string (or NA) for backwards compatibility with callers that don't care
+# about block vs. no-results.
 search_duckduckgo <- function(name, city) {
   resp <- tryCatch(
     .build_ddg_request(name, city) |> httr2::req_perform(),
@@ -123,7 +155,7 @@ search_duckduckgo <- function(name, city) {
       NULL
     }
   )
-  .parse_ddg_response(resp)
+  .parse_ddg_response(resp)$url
 }
 
 if (!testthat::is_testing()) {
@@ -158,6 +190,13 @@ if (!testthat::is_testing()) {
   to_search <- urls |> filter(is.na(url) & (is.na(last_searched) | last_searched < retry_cutoff))
   cli_alert_info("{nrow(to_search)} facilities need URL lookup.")
 
+  n_found <- 0L
+  n_no_results <- 0L
+  n_blocked <- 0L
+  consec_blocks <- 0L
+  abort_reason <- NULL
+  run_start <- Sys.time()
+
   if (nrow(to_search) > 0L) {
     batches <- split(
       seq_len(nrow(to_search)),
@@ -171,33 +210,67 @@ if (!testthat::is_testing()) {
     )
 
     for (idx in batches) {
+      if (!is.null(abort_reason)) break
       batch <- to_search[idx, ]
       bccc_batch <- bccc |> filter(FAC_PARTY_ID %in% batch$FAC_PARTY_ID)
 
-      reqs <- lapply(seq_len(nrow(batch)), function(i) {
+      batch_results <- list()
+      for (i in seq_len(nrow(batch))) {
+        elapsed <- as.numeric(difftime(Sys.time(), run_start, units = "secs"))
+        if (elapsed > DDG_MAX_RUNTIME_SECS) {
+          abort_reason <- cli::format_inline("runtime budget reached ({round(elapsed)}s > {DDG_MAX_RUNTIME_SECS}s)")
+          break
+        }
+        if (consec_blocks >= DDG_MAX_CONSEC_BLOCKS) {
+          abort_reason <- cli::format_inline("{consec_blocks} consecutive blocked responses (DDG rate-limiting)")
+          break
+        }
+
         row <- bccc_batch |> filter(FAC_PARTY_ID == batch$FAC_PARTY_ID[[i]])
-        .build_ddg_request(row$NAME[[1]], row$CITY[[1]])
-      })
-
-      resps <- httr2::req_perform_parallel(reqs, max_active = DDG_POOL, on_error = "continue", progress = FALSE)
-
-      results <- lapply(seq_len(nrow(batch)), function(i) {
-        found_url <- .parse_ddg_response(resps[[i]])
-        tibble::tibble(
-          FAC_PARTY_ID = batch$FAC_PARTY_ID[[i]],
-          url = found_url,
-          url_source = if (!is.na(found_url)) "duckduckgo" else NA_character_,
-          last_searched = today
+        resp <- tryCatch(
+          .build_ddg_request(row$NAME[[1]], row$CITY[[1]]) |> httr2::req_perform(),
+          error = function(e) NULL
         )
-      })
+        parsed <- .parse_ddg_response(resp)
 
-      urls <- rows_update(urls, bind_rows(results), by = "FAC_PARTY_ID", unmatched = "error")
-      readr::write_csv(urls, URLS_PATH)
-      cli_progress_update(inc = nrow(batch))
+        if (parsed$status == "found") {
+          n_found <- n_found + 1L
+          consec_blocks <- 0L
+        } else if (parsed$status == "no_results") {
+          n_no_results <- n_no_results + 1L
+          consec_blocks <- 0L
+        } else {
+          n_blocked <- n_blocked + 1L
+          consec_blocks <- consec_blocks + 1L
+        }
+
+        # Only record a result row when the request actually completed. Blocked
+        # rows are left untouched so they're retried on the next run instead of
+        # being locked out for DDG_RETRY_DAYS days.
+        if (parsed$status != "blocked") {
+          batch_results[[length(batch_results) + 1L]] <- tibble::tibble(
+            FAC_PARTY_ID = batch$FAC_PARTY_ID[[i]],
+            url = parsed$url,
+            url_source = if (!is.na(parsed$url)) "duckduckgo" else NA_character_,
+            last_searched = today
+          )
+        }
+
+        cli_progress_update(inc = 1)
+      }
+
+      if (length(batch_results) > 0L) {
+        urls <- rows_update(urls, bind_rows(batch_results), by = "FAC_PARTY_ID", unmatched = "error")
+        readr::write_csv(urls, URLS_PATH)
+      }
     }
 
     cli_progress_done()
   }
 
+  cli_alert_info("Found: {n_found} | No results: {n_no_results} | Blocked: {n_blocked}")
+  if (!is.null(abort_reason)) {
+    cli_alert_warning("Aborted early: {abort_reason}. Re-run to continue.")
+  }
   cli_alert_success("Done. {nrow(urls)} facilities written to {.file {URLS_PATH}}.")
 }

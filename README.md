@@ -56,10 +56,14 @@ Rscript find_urls.R
 
 | Variable | Default | Description |
 |---|---|---|
-| `DDG_POOL` | `20` | Max concurrent DuckDuckGo requests; reduce if getting blocked |
+| `DDG_THROTTLE_SECS` | `3` | Seconds between sequential DuckDuckGo requests; lower = faster but more likely to trigger rate limiting |
 | `DDG_BATCH_SIZE` | `100` | Facilities per write checkpoint; lower = more frequent saves |
 | `DDG_RETRY_DAYS` | `150` | Days before re-searching a facility that previously returned no URL |
+| `DDG_MAX_RUNTIME_SECS` | `18000` | Wall-clock budget (5h). Script checkpoints and exits cleanly when reached, so the monthly cron stays under the GHA 6h job limit |
+| `DDG_MAX_CONSEC_BLOCKS` | `20` | Abort the run after this many consecutive blocked responses (DDG is rate-limiting our IP); the next run will resume |
+
+Blocked responses (DDG anti-bot pages, non-200 status, transport errors) do not update `last_searched`, so affected facilities are retried on the next run rather than locked out for `DDG_RETRY_DAYS` days.
 
 ```bash
-DDG_POOL=5 Rscript find_urls.R
+DDG_THROTTLE_SECS=5 Rscript find_urls.R
 ```

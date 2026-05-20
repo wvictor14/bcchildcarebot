@@ -61,7 +61,7 @@ Key R libraries:
 **find_urls.yml**
 - **Trigger**: Monthly on the 1st at 4:00 PM UTC, manual dispatch
 - **Process**: Runs `find_urls.R` → commits updated `data/facility_urls.csv`
-- **Tuning**: Set `DDG_POOL`, `DDG_BATCH_SIZE`, `DDG_RETRY_DAYS` env vars to adjust behaviour
+- **Tuning**: Set `DDG_THROTTLE_SECS`, `DDG_BATCH_SIZE`, `DDG_RETRY_DAYS`, `DDG_MAX_RUNTIME_SECS`, `DDG_MAX_CONSEC_BLOCKS` env vars to adjust behaviour. Requests run sequentially with throttling because DDG's HTML endpoint returns anti-bot challenge pages (HTTP 202) under burst load. Blocked responses are NOT marked `last_searched`, so they retry next run instead of being locked out for `DDG_RETRY_DAYS`.
 
 ## Data Files
 
