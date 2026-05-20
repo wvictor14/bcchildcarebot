@@ -116,7 +116,7 @@ tbl_data <- bccc |>
       paste0(" (last seen ", format(last_vacancy_gr1_age12, "%Y-%m-%d"), ")"),
       ""
     ),
-    maps_query = paste0(NAME, ", ", ADDRESS_1, ", ", CITY),
+    maps_query = paste0(ADDRESS_1, ", ", CITY, ", BC"),
     maps_url = paste0("https://www.google.com/maps/search/", URLencode(maps_query)),
     popup = glue::glue(
       "<b>{NAME}</b>",
@@ -413,7 +413,7 @@ row_details <- function(index, bccc) {
           'Google Maps',
           htmltools::a(
             "View on Google Maps",
-            href = paste0("https://www.google.com/maps/search/", URLencode(paste0(bccc$NAME, ", ", bccc$ADDRESS_1, ", ", bccc$CITY))),
+            href = paste0("https://www.google.com/maps/search/", URLencode(paste0(bccc$ADDRESS_1, ", ", bccc$CITY, ", BC"))),
             target = "_blank"
           )
         ),
