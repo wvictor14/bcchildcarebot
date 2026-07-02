@@ -72,8 +72,8 @@ if (isTRUE(params$fast_render)) {
 
 tbl_data <- bccc |>
 
-  # filter to last vacancy update - 14 days
-  #filter(    VACANCY_LAST_UPDATE >= dataset_last_update - 1 - 7) |>
+  # filter to last vacancy update - 30 days
+  filter(    VACANCY_LAST_UPDATE >= dataset_last_update - 1 - 30) |>
 
   # filter columns
   select(
