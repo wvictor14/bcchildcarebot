@@ -51,13 +51,13 @@ bccc_meta <- pin_meta(board, 'bcchildcare')
 
 ```{r setup_tbl_data}
 # latest vacancy update
-dataset_last_update <- bccc_meta$user$date |>  lubridate::ymd()
+dataset_last_update <- bccc_meta$user$date |> lubridate::ymd()
 
 tbl_data <- bccc |>
-  prepare_data() |> 
-  
+  prepare_data() |>
+
   # filter to last vacancy update - 14 days
-  filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 - 5) |> 
+  filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 - 5) |>
   arrange(desc(VACANCY_LAST_UPDATE))
 shared_data <- SharedData$new(tbl_data)
 ```
@@ -89,7 +89,9 @@ reactable(
   defaultSortOrder = "desc",
   defaultColDef = colDef(
     # show = FALSE,
-    headerClass = "header", align = "left"),
+    headerClass = "header",
+    align = "left"
+  ),
   onClick = "expand",
   resizable = TRUE,
   columns = coldefs,
@@ -119,31 +121,33 @@ icons <- awesomeIcons(
   library = 'glyphicon'
 )
 
-service_levels <- bccc$SERVICE_TYPE_CD |>  unique() |> sort()
+service_levels <- bccc$SERVICE_TYPE_CD |> unique() |> sort()
 pal <- colorFactor(
-  c("navy", "firebrick", "orange"), 
+  c("navy", "firebrick", "orange"),
   domain = service_levels
 )
 
-map <- shared_data |> 
-  
+map <- shared_data |>
+
   # map
   leaflet() |>
-  setView(-123.04591, 49.25, zoom = 11) |> 
-  
+  setView(-123.04591, 49.25, zoom = 11) |>
+
   addProviderTiles(providers$CartoDB.Voyager) |>
   #providers$CartoDB.Positron
   addCircleMarkers(
-    popup = ~popup, 
+    popup = ~popup,
     label = ~NAME,
     #usterOptions = markerClusterOptions(),
     #icon = icons
-    stroke = FALSE,  fillOpacity = 0.6,
-    color = ~pal(SERVICE_TYPE_CD),
+    stroke = FALSE,
+    fillOpacity = 0.6,
+    color = ~ pal(SERVICE_TYPE_CD),
     radius = 5
-  ) |> 
+  ) |>
   addLegend(
-    "bottomright", pal = pal, 
+    "bottomright",
+    pal = pal,
     values = ~SERVICE_TYPE_CD,
     title = "Childcare type",
     opacity = 1
