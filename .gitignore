@@ -3,4 +3,4 @@
 *.Rproj
 *.html
 .Rhistory
-.superpowers/
+dashboard_files/*

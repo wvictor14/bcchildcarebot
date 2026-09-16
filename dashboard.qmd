@@ -7,7 +7,8 @@ format:
       - custom.scss
     orientation: rows
     scrolling: false
-    embed-resources: true
+    embed-resources: false
+    include-after-body: scripts-after-body.html
     nav-buttons: 
       - icon: github
         href: https://github.com/wvictor14/bcchildcarebot
@@ -23,79 +24,54 @@ params:
 
 ```{r load_libraries}
 #| include: FALSE
-library(tidyverse)
-library(glue)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(purrr)
+library(tibble)
 library(reactable)
 library(htmltools)
 library(crosstalk)
 library(leaflet)
-library(tippy)
 ```
 
 ```{r load_data}
 #| include: false
-# read in bc child care data ----
 url <- 'https://catalogue.data.gov.bc.ca/dataset/4cc207cc-ff03-44f8-8c5f-415af5224646/resource/9a9f14e1-03ea-4a11-936a-6e77b15eeb39/download/childcare_locations.csv'
-bccc <- readr::read_csv(url)
+bccc <- readr::read_csv(
+  url,
+  col_select = c(
+    FAC_PARTY_ID,
+    SERVICE_TYPE_CD,
+    NAME,
+    ADDRESS_1,
+    ADDRESS_2,
+    CITY,
+    PHONE,
+    WEBSITE,
+    EMAIL,
+    LONGITUDE,
+    LATITUDE,
+    ECE_CERTIFICATION_YN,
+    ELF_PROGRAMMING_YN,
+    IS_INCOMPLETE_IND,
+    IS_CCFRI_AUTH,
+    dplyr::starts_with("LANG_"),
+    dplyr::starts_with("VACANCY_")
+  )
+)
 .today <- lubridate::today(tzone = 'Canada/Pacific')
 
-```{r setup_tbl_data}
-# latest vacancy update
-dataset_last_update <- bccc_meta$user$date |> lubridate::ymd()
-
-tbl_data <- bccc |>
-  prepare_data() |>
-
-  # filter to last vacancy update - 14 days
-  filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 - 5) |>
-  arrange(desc(VACANCY_LAST_UPDATE))
-shared_data <- SharedData$new(tbl_data)
-```
-
-# Main 
-
-## Filter Facilities {height=10%}
-
-```{r filters}
-#| classes: "filters-card .border-0 .padding-0 .margin-0"
-#| expandable: false
-div(
-  class = "filters",
-  crosstalk::filter_select('filter_city', 'City', shared_data, ~CITY),
-  filter_select2("filter_vacancy", "Vacancy", shared_data, ~VACANCY),
-  search_filter("filter_name", "Search by Facility Name", shared_data, "NAME")
-)
-```
-
-## Row 
-
-```{r render_reactable}
-#| classes: "border"
-#| eval: true
-# columns to hide from unested view
-coldefs <- create_coldefs(tbl_data)
-reactable(
-  shared_data,
-  defaultSortOrder = "desc",
-  defaultColDef = colDef(
-    # show = FALSE,
-    headerClass = "header",
-    align = "left"
-  ),
-  onClick = "expand",
-  resizable = TRUE,
-  columns = coldefs,
-  #details = function(index) row_details(index, tbl_data),
-  details = colDef(
-    details = JS('renderRowDetails'),
-    html = TRUE,
-  ),
-  pagination = TRUE,
-  searchable = FALSE,
-  highlight = TRUE,
-  theme = reactableTheme(
-    searchInputStyle = list(
-      width = '100%'
+if (file.exists("data/vacancy_history.csv")) {
+  history <- readr::read_csv(
+    "data/vacancy_history.csv",
+    col_types = readr::cols(
+      FAC_PARTY_ID = readr::col_integer(),
+      last_vacancy_under36 = readr::col_date(),
+      last_vacancy_30mos_5yrs = readr::col_date(),
+      last_vacancy_licpre = readr::col_date(),
+      last_vacancy_gr1_age12 = readr::col_date(),
+      .default = readr::col_skip()
     )
   )
   bccc <- dplyr::left_join(bccc, history, by = "FAC_PARTY_ID")
@@ -107,186 +83,293 @@ reactable(
 }
 ```
 
+```{r setup_tbl_data}
+#| include: false
+dataset_last_update <- max(bccc$VACANCY_LAST_UPDATE, na.rm = TRUE)
 
-service_levels <- bccc$SERVICE_TYPE_CD |> unique() |> sort()
-pal <- colorFactor(
-  c("navy", "firebrick", "orange"),
-  domain = service_levels
-)
+if (isTRUE(params$fast_render)) {
+  bccc <- bccc |> dplyr::filter(VACANCY_LAST_UPDATE >= dataset_last_update - 3)
+}
 
-map <- shared_data |>
-
-  # map
-  leaflet() |>
-  setView(-123.04591, 49.25, zoom = 11) |>
-
-  addProviderTiles(providers$CartoDB.Voyager) |>
-  #providers$CartoDB.Positron
-  addCircleMarkers(
-    popup = ~popup,
-    label = ~NAME,
-    #usterOptions = markerClusterOptions(),
-    #icon = icons
-    stroke = FALSE,
-    fillOpacity = 0.6,
-    color = ~ pal(SERVICE_TYPE_CD),
-    radius = 5
+tbl_data <- bccc |>
+  filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 - 3) |>
+  select(
+    SERVICE_TYPE_CD:CITY,
+    PHONE:EMAIL,
+    LONGITUDE,
+    LATITUDE,
+    ECE_CERTIFICATION_YN,
+    ELF_PROGRAMMING_YN,
+    IS_INCOMPLETE_IND,
+    IS_CCFRI_AUTH,
+    contains('LANG_'),
+    contains('VACANCY_')
   ) |>
-  addLegend(
-    "bottomright",
-    pal = pal,
-    values = ~SERVICE_TYPE_CD,
-    title = "Childcare type",
-    opacity = 1
-  )
-}
-
-htmltools::div(
-  id = "filterdiv",
-  h3("Filter facilities"),
-  crosstalk::filter_slider(
-    "VACANCY_LAST_UPDATE",
-    tippy::tippy(
-      h4("Vacancy Information Last Updated:"),
-      "Filter to facilities that have been updated from between these two dates",
-      placement = 'right'
+  select(NAME, everything()) |>
+  mutate(
+    lbl_under36 = if_else(
+      !is.na(last_vacancy_under36),
+      paste0(" (last seen ", format(last_vacancy_under36, "%Y-%m-%d"), ")"),
+      ""
     ),
-    shared_data,
-    ~VACANCY_LAST_UPDATE
-  ),
-  filter_select("CITY", h4("City:"), shared_data, ~CITY),
+    lbl_30mos = if_else(
+      !is.na(last_vacancy_30mos_5yrs),
+      paste0(" (last seen ", format(last_vacancy_30mos_5yrs, "%Y-%m-%d"), ")"),
+      ""
+    ),
+    lbl_licpre = if_else(
+      !is.na(last_vacancy_licpre),
+      paste0(" (last seen ", format(last_vacancy_licpre, "%Y-%m-%d"), ")"),
+      ""
+    ),
+    lbl_gr1 = if_else(
+      !is.na(last_vacancy_gr1_age12),
+      paste0(" (last seen ", format(last_vacancy_gr1_age12, "%Y-%m-%d"), ")"),
+      ""
+    ),
+    maps_query = paste0(ADDRESS_1, ", ", CITY, ", BC"),
+    maps_url = paste0(
+      "https://www.google.com/maps/search/",
+      URLencode(maps_query)
+    ),
+    popup = glue::glue(
+      "<b>{NAME}</b>",
+      "{SERVICE_TYPE_CD}",
+      "{ADDRESS_1}",
+      "{PHONE}",
+      "<a href='https://www.google.com/maps/search/{URLencode(paste0(ADDRESS_1, ', ', CITY, ', BC'))}' target='_blank'>Map</a>",
+      "<b>Vacancy:</b>",
+      "• Under 36m: {VACANCY_SRVC_UNDER36}{lbl_under36}",
+      "• 30m–5y: {VACANCY_SRVC_30MOS_5YRS}{lbl_30mos}",
+      "• Preschool: {VACANCY_SRVC_LICPRE}{lbl_licpre}",
+      "• Gr1–12: {VACANCY_SRVC_OOS_GR1_AGE12}{lbl_gr1}",
+      .sep = "<br>"
+    )
+  ) |>
+  select(-starts_with("lbl_")) |>
+  mutate(id = row_number()) |>
+  pivot_longer(
+    cols = c(
+      contains('VACANCY_SRVC_'),
+      contains('LANG_'),
+      ECE_CERTIFICATION_YN,
+      ELF_PROGRAMMING_YN,
+      IS_CCFRI_AUTH,
+      IS_INCOMPLETE_IND
+    ),
+    names_to = 'name',
+    values_to = 'value'
+  ) |>
+  mutate(
+    value = ifelse(
+      value == 'Y',
+      str_remove_all(name, '^VACANCY_SRVC_') |>
+        str_remove_all('^LANG_') |>
+        str_remove_all('_YN$'),
+      NA
+    ),
+    value = case_when(
+      value == 'ECE_CERTIFICATION' ~ 'Early Childhood Educator (ECE)',
+      value == 'ELF_PROGRAMMING' ~ 'ELF',
+      value == 'IS_CCFRI_AUTH' ~ 'CCFRI authorized',
+      value == '30MOS_5YRS' ~ "30 months - 5 years",
+      value == 'UNDER36' ~ 'Under 36 months',
+      value == 'LICPRE' ~ 'Licensed Pre-school',
+      value == 'OOS_GR1_AGE12' ~ 'Grade 1 - Age 12',
+      .default = value
+    )
+  ) |>
+  pivot_wider(names_from = name, values_from = value)
 
-  h4('Certifications'),
-  filter_checkbox_no_label(
-    "ECE_CERTIFICATION_YN",
-    NULL,
-    shared_data,
-    ~ECE_CERTIFICATION_YN
-  ),
-  filter_checkbox_no_label(
-    "ELF_PROGRAMMING_YN",
-    NULL,
-    shared_data,
-    ~ELF_PROGRAMMING_YN
-  ),
-  filter_checkbox_no_label(
-    "IS_CCFRI_AUTH",
-    NULL,
-    shared_data,
-    ~IS_CCFRI_AUTH
-  ),
-  filter_checkbox_no_label(
-    "IS_INCOMPLETE_IND",
-    NULL,
-    shared_data,
-    ~IS_INCOMPLETE_IND
-  ),
+shared_data <- SharedData$new(tbl_data, key = ~id)
 
-  tippy::tippy(
-    h4('Filter to facilities with vacancies in specific age group:'),
-    "If all are left unchecked, will show all facilities, regardless of vacancy status",
-    placement = 'right'
-  ),
-  filter_checkbox_no_label(
-    "VACANCY_SRVC_UNDER36",
-    "",
-    shared_data,
-    ~VACANCY_SRVC_UNDER36
-  ),
-  filter_checkbox_no_label(
-    "VACANCY_SRVC_30MOS_5YRS",
-    "",
-    shared_data,
-    ~VACANCY_SRVC_30MOS_5YRS
-  ),
-  filter_checkbox_no_label(
-    "VACANCY_SRVC_LICPRE",
-    "",
-    shared_data,
-    ~VACANCY_SRVC_LICPRE
-  ),
-  filter_checkbox_no_label(
-    "VACANCY_SRVC_OOS_GR1_AGE12",
-    "",
-    shared_data,
-    ~VACANCY_SRVC_OOS_GR1_AGE12
-  ),
-
-  # language filters
-  tippy::tippy(
-    h4('Filter to facilities with that provide service in other languages'),
-    "This information is often inaccurate",
-    placement = 'right'
-  ),
-  filter_checkbox_no_label(
-    "LANG_CANTONESE_YN",
-    "",
-    shared_data,
-    ~LANG_CANTONESE_YN
-  ),
-  filter_checkbox_no_label(
-    "LANG_MANDARIN_YN",
-    "",
-    shared_data,
-    ~LANG_MANDARIN_YN
-  ),
-  filter_checkbox_no_label(
-    "LANG_PUNJABI_YN",
-    "",
-    shared_data,
-    ~LANG_PUNJABI_YN
-  ),
-  filter_checkbox_no_label(
-    "LANG_FRENCH_YN",
-    "",
-    shared_data,
-    ~LANG_FRENCH_YN
-  ),
-  filter_checkbox_no_label(
-    "LANG_SPANISH_YN",
-    "",
-    shared_data,
-    ~LANG_SPANISH_YN
-  ),
-  filter_checkbox_no_label(
-    "LANG_OTHER_YN",
-    "",
-    shared_data,
-    ~LANG_OTHER_YN
-  ),
-) |>
-  htmltools::browsable()
+stat_vac_cols <- c(
+  "VACANCY_SRVC_UNDER36",
+  "VACANCY_SRVC_30MOS_5YRS",
+  "VACANCY_SRVC_LICPRE",
+  "VACANCY_SRVC_OOS_GR1_AGE12"
+)
+stat_any <- as.integer(rowSums(!is.na(tbl_data[, stat_vac_cols])) > 0L)
+stat_u36 <- as.integer(!is.na(tbl_data$VACANCY_SRVC_UNDER36))
+stat_30 <- as.integer(!is.na(tbl_data$VACANCY_SRVC_30MOS_5YRS))
+stat_pre <- as.integer(!is.na(tbl_data$VACANCY_SRVC_LICPRE))
+stat_gr1 <- as.integer(!is.na(tbl_data$VACANCY_SRVC_OOS_GR1_AGE12))
+stat_total <- nrow(tbl_data)
+stat_any_n <- sum(stat_any)
+stat_u36_n <- sum(stat_u36)
+stat_30_n <- sum(stat_30)
+stat_pre_n <- sum(stat_pre)
+stat_gr1_n <- sum(stat_gr1)
+stat_rate <- if (stat_total > 0L) round(100 * stat_any_n / stat_total, 1) else 0
 ```
 
-```{js}
-function filter_default() {
-  document.getElementById("CITY").getElementsByClassName("selectized")[0].selectize.setValue(["Richmond", "Vancouver", "Burnaby"], false);
-}
-$(document).ready(filter_default);
+```{r filter_bar_vars}
+#| include: false
+date_keys_json <- jsonlite::toJSON(tbl_data$id, auto_unbox = FALSE)
+date_offsets_json <- jsonlite::toJSON(
+  as.integer(dataset_last_update - tbl_data$VACANCY_LAST_UPDATE),
+  auto_unbox = FALSE
+)
+stat_any_json <- jsonlite::toJSON(stat_any, auto_unbox = FALSE)
+stat_u36_json <- jsonlite::toJSON(stat_u36, auto_unbox = FALSE)
+stat_30_json <- jsonlite::toJSON(stat_30, auto_unbox = FALSE)
+stat_pre_json <- jsonlite::toJSON(stat_pre, auto_unbox = FALSE)
+stat_gr1_json <- jsonlite::toJSON(stat_gr1, auto_unbox = FALSE)
 ```
+
+
 
 # Vacancies Map
 
 ## Row
 
-Last date that this page has been updated: `{r} .today`
+```{r}
+#| padding: 0px
+htmltools::div(
+  class = "bc-ui-wrapper",
+  htmltools::div(
+    class = "bc-ui-meta",
+    "Data: ",
+    format(dataset_last_update, "%Y-%m-%d"),
+    " · Page: ",
+    format(.today, "%Y-%m-%d"),
+    " · Pulled daily from BC Childcare Map. ",
+    htmltools::a(
+      href = "https://catalogue.data.gov.bc.ca/dataset/child-care-map-data",
+      "Source",
+      .noWS = "outside"
+    ),
+    ". Verify info before relying."
+  ),
+  htmltools::div(
+    class = "bc-stat-bar",
+    htmltools::tags$strong(id = "bc-stat-showing", as.character(stat_total)),
+    " facilities · ",
+    htmltools::tags$strong(id = "bc-stat-any", as.character(stat_any_n)),
+    " with vacancies · ",
+    htmltools::tags$strong(id = "bc-stat-rate", paste0(stat_rate, "%"))
+  ),
+  htmltools::div(
+    class = "bc-filter-bar",
+    htmltools::div(
+      class = "bc-filter-group-inline",
+      htmltools::span(class = "bc-filter-label", "Updated"),
+      htmltools::div(
+        class = "bc-filter-radios",
+        htmltools::tags$label(
+          class = "bc-filter-radio active",
+          htmltools::tags$input(
+            type = "radio",
+            name = "updated_within",
+            value = "1"
+          ),
+          "1d"
+        ),
+        htmltools::tags$label(
+          class = "bc-filter-radio",
+          htmltools::tags$input(
+            type = "radio",
+            name = "updated_within",
+            value = "3"
+          ),
+          "3d"
+        ),
+        htmltools::tags$label(
+          class = "bc-filter-radio",
+          htmltools::tags$input(
+            type = "radio",
+            name = "updated_within",
+            value = "7",
+            checked = "checked"
+          ),
+          "7d"
+        ),
+        htmltools::tags$label(
+          class = "bc-filter-radio",
+          htmltools::tags$input(
+            type = "radio",
+            name = "updated_within",
+            value = "14"
+          ),
+          "2w"
+        )
+      )
+    ),
+    htmltools::div(
+      class = "bc-filter-group-inline",
+      htmltools::span(class = "bc-filter-label", "City"),
+      filter_select("CITY", NULL, shared_data, ~CITY)
+    ),
+    htmltools::div(
+      class = "bc-filter-group-inline",
+      htmltools::span(class = "bc-filter-label", "Vacancy"),
+      filter_checkbox(
+        "VACANCY_SRVC_UNDER36",
+        "U36",
+        shared_data,
+        ~VACANCY_SRVC_UNDER36
+      ),
+      filter_checkbox(
+        "VACANCY_SRVC_30MOS_5YRS",
+        "30m–5y",
+        shared_data,
+        ~VACANCY_SRVC_30MOS_5YRS
+      ),
+      filter_checkbox(
+        "VACANCY_SRVC_LICPRE",
+        "Pre",
+        shared_data,
+        ~VACANCY_SRVC_LICPRE
+      ),
+      filter_checkbox(
+        "VACANCY_SRVC_OOS_GR1_AGE12",
+        "Gr1–12",
+        shared_data,
+        ~VACANCY_SRVC_OOS_GR1_AGE12
+      )
+    ),
+    htmltools::tags$button(
+      id = "bc-clear-all",
+      type = "button",
+      class = "btn btn-sm btn-outline-secondary",
+      onclick = "bcClearAll()",
+      "Clear all"
+    ),
+    htmltools::tags$script(htmltools::HTML(paste0(
+      "window.BC_DATE_KEYS = ",
+      date_keys_json,
+      ";\n",
+      "window.BC_DATE_OFFSETS = ",
+      date_offsets_json,
+      ";\n",
+      "window.BC_STAT_ANY = ",
+      stat_any_json,
+      ";\n",
+      "window.BC_STAT_U36 = ",
+      stat_u36_json,
+      ";\n",
+      "window.BC_STAT_30 = ",
+      stat_30_json,
+      ";\n",
+      "window.BC_STAT_PRE = ",
+      stat_pre_json,
+      ";\n",
+      "window.BC_STAT_GR1 = ",
+      stat_gr1_json,
+      ";\n",
+      "window.BC_CT_GROUP = ",
+      jsonlite::toJSON(shared_data$groupName(), auto_unbox = TRUE),
+      ";\n"
+    )))
+  ),
+  htmltools::div(class = "bc-chips-text", `data-chips` = "map")
+)
+```
 
-Last date that BC updated dataset: `{r} dataset_last_update`
-
-Every day, new vacancies across BC Child Care facilities will be pull from the BC Childcare Map dataet with up-to-date vacancy information[^1].
-
-[^1]: This dataset is not guaranteed to have accurate information. Please verify any information from this resource.
-
-## Row Map
+## Row
 
 ```{r}
 #| padding: 0px
-icons <- awesomeIcons(
-  icon = 'home',
-  iconColor = 'black',
-  library = 'glyphicon'
-)
-
 service_levels <- bccc$SERVICE_TYPE_CD |> unique() |> sort()
 pal <- colorFactor(
   c("navy", "firebrick", "orange"),
@@ -294,18 +377,12 @@ pal <- colorFactor(
 )
 
 shared_data |>
-
-  # map
   leaflet() |>
   setView(-123.04591, 49.25, zoom = 11) |>
-
-  addProviderTiles(providers$CartoDB.Voyager) |>
-  #providers$CartoDB.Positron
+  addProviderTiles(providers$OpenStreetMap) |>
   addCircleMarkers(
     popup = ~popup,
     label = ~NAME,
-    #usterOptions = markerClusterOptions(),
-    #icon = icons
     stroke = FALSE,
     fillOpacity = 0.6,
     color = ~ pal(SERVICE_TYPE_CD),
@@ -324,6 +401,10 @@ shared_data |>
 
 ## Row
 
+<div class="bc-chips-text" data-chips="table"></div>
+
+## Row
+
 ```{r dev}
 #| padding: 0px
 #| eval: false
@@ -335,7 +416,6 @@ reactable(bccc[1:10, ])
 #| eval: true
 row_details <- function(index, bccc) {
   bccc <- bccc[index, ]
-  # function that creates class based on colum name
   df_field <- function(name, ...) {
     if (any(is.na(...))) {
       NULL
@@ -344,6 +424,74 @@ row_details <- function(index, bccc) {
     }
   }
 
+  vac_mark <- function(x) dplyr::if_else(!is.na(x), "Y", "N")
+  vac_last <- function(x) {
+    dplyr::if_else(
+      is.na(x),
+      "Never",
+      format(x, "%Y-%m-%d")
+    )
+  }
+  lang_cols <- bccc |> dplyr::select(dplyr::contains("LANG_"))
+  lang_present <- lang_cols |>
+    tidyr::pivot_longer(
+      dplyr::everything(),
+      names_to = "Language",
+      values_to = "present"
+    ) |>
+    dplyr::filter(!is.na(present)) |>
+    dplyr::mutate(
+      Language = stringr::str_remove_all(Language, "LANG_") |>
+        stringr::str_remove_all("_YN")
+    ) |>
+    dplyr::pull(Language)
+  lang_text <- if (length(lang_present) == 0L) {
+    "None listed"
+  } else {
+    paste(lang_present, collapse = ", ")
+  }
+  vacancy_rows <- list(
+    list(
+      "Under 36 months",
+      vac_mark(bccc$VACANCY_SRVC_UNDER36),
+      vac_last(bccc$last_vacancy_under36)
+    ),
+    list(
+      "30 months - 5 years",
+      vac_mark(bccc$VACANCY_SRVC_30MOS_5YRS),
+      vac_last(bccc$last_vacancy_30mos_5yrs)
+    ),
+    list(
+      "Licensed Pre-school",
+      vac_mark(bccc$VACANCY_SRVC_LICPRE),
+      vac_last(bccc$last_vacancy_licpre)
+    ),
+    list(
+      "Grade 1 - Age 12",
+      vac_mark(bccc$VACANCY_SRVC_OOS_GR1_AGE12),
+      vac_last(bccc$last_vacancy_gr1_age12)
+    )
+  )
+  vacancy_table <- htmltools::tags$table(
+    class = "vacancy-table",
+    htmltools::tags$thead(
+      htmltools::tags$tr(
+        htmltools::tags$th("Age Group"),
+        htmltools::tags$th("Vacancy?"),
+        htmltools::tags$th("Last vacancy")
+      )
+    ),
+    htmltools::tags$tbody(
+      lapply(vacancy_rows, function(r) {
+        htmltools::tags$tr(
+          htmltools::tags$td(r[[1]]),
+          htmltools::tags$td(r[[2]]),
+          htmltools::tags$td(r[[3]])
+        )
+      })
+    )
+  )
+
   detail <- div(
     class = "tbl-detail",
     div(class = "detail-header", span(class = "detail-title", bccc$NAME)),
@@ -351,7 +499,6 @@ row_details <- function(index, bccc) {
 
     bscols(
       div(
-        # column left
         df_field('Last Updated', bccc$VACANCY_LAST_UPDATE),
         df_field("Phone", bccc$PHONE),
         df_field("Website", bccc$WEBSITE),
@@ -376,96 +523,18 @@ row_details <- function(index, bccc) {
         df_field('IS_CCFRI_AUTH', bccc$IS_CCFRI_AUTH)
       ),
       div(
-        # column right
-        df_field(
-          'Map',
-          bccc |>
-            leaflet() |>
-            addProviderTiles(providers$CartoDB.Voyager) |>
-            #addProviderTiles(providers$CartoDB.Positron) |>
-            addCircleMarkers(lng = ~LONGITUDE, lat = ~LATITUDE)
-        )
+        df_field('Latitude', bccc$LATITUDE),
+        df_field('Longitude', bccc$LONGITUDE),
+        df_field('Language', lang_text)
       )
     ),
     bscols(
-      div(
-        df_field(
-          "Vacancy type",
-          reactable(
-            tibble::tibble(
-              `Age Group` = c(
-                "Under 36 months",
-                "30 months - 5 years",
-                "Licensed Pre-school",
-                "Grade 1 - Age 12"
-              ),
-              `Vacancy?` = c(
-                ifelse(!is.na(bccc$VACANCY_SRVC_UNDER36), "Y", "N"),
-                ifelse(!is.na(bccc$VACANCY_SRVC_30MOS_5YRS), "Y", "N"),
-                ifelse(!is.na(bccc$VACANCY_SRVC_LICPRE), "Y", "N"),
-                ifelse(!is.na(bccc$VACANCY_SRVC_OOS_GR1_AGE12), "Y", "N")
-              ),
-              `Last vacancy` = c(
-                ifelse(
-                  is.na(bccc$last_vacancy_under36),
-                  "Never",
-                  format(bccc$last_vacancy_under36, "%Y-%m-%d")
-                ),
-                ifelse(
-                  is.na(bccc$last_vacancy_30mos_5yrs),
-                  "Never",
-                  format(bccc$last_vacancy_30mos_5yrs, "%Y-%m-%d")
-                ),
-                ifelse(
-                  is.na(bccc$last_vacancy_licpre),
-                  "Never",
-                  format(bccc$last_vacancy_licpre, "%Y-%m-%d")
-                ),
-                ifelse(
-                  is.na(bccc$last_vacancy_gr1_age12),
-                  "Never",
-                  format(bccc$last_vacancy_gr1_age12, "%Y-%m-%d")
-                )
-              )
-            ),
-            pagination = FALSE,
-            defaultColDef = colDef(headerClass = "header"),
-            class = "vacancy-table",
-            theme = reactableTheme(cellPadding = "8px 12px")
-          )
-        )
-      ),
-      div(
-        df_field(
-          'Language',
-          reactable(
-            bccc |>
-              select(contains('LANG_')) |>
-              pivot_longer(
-                everything(),
-                names_to = 'Language',
-                values_to = 'Y/N'
-              ) |>
-              mutate(
-                Language = str_remove_all(Language, 'LANG_') |>
-                  str_remove_all('_YN'),
-                `Y/N` = ifelse(!is.na(`Y/N`), 'Y', 'N')
-              ),
-            pagination = FALSE,
-            defaultColDef = colDef(headerClass = "header"),
-            class = "vacancy-table",
-            theme = reactableTheme(cellPadding = "8px 12px")
-          )
-        )
-      )
+      div(df_field("Vacancy type", vacancy_table))
     )
   )
   detail
 }
 
-#htmltools::browsable(row_details(1, bccc))
-
-# columns to hide from unested view
 hide <- tbl_data |>
   select(
     contains('VACANCY'),
@@ -479,18 +548,15 @@ hide <- tbl_data |>
     `ADDRESS_2`,
     WEBSITE,
     EMAIL,
-
     ECE_CERTIFICATION_YN,
     ELF_PROGRAMMING_YN,
     IS_INCOMPLETE_IND,
     IS_CCFRI_AUTH,
     popup,
-    maps_query,
-    maps_url,
     contains('LANG_')
   ) |>
-  colnames() %>%
-  setNames(., .) |>
+  colnames() |>
+  purrr::set_names() |>
   map(
     ~ colDef(
       show = FALSE
@@ -507,11 +573,9 @@ coldefs <- purrr::list_flatten(list(hide, show))
 
 reactable(
   shared_data,
-  #tbl_data[1:10,],
   defaultSorted = "VACANCY_LAST_UPDATE",
   defaultSortOrder = "desc",
   defaultColDef = colDef(
-    # show = FALSE,
     headerClass = "header",
     align = "left"
   ),
@@ -519,7 +583,8 @@ reactable(
   resizable = TRUE,
   columns = coldefs,
   details = function(index) row_details(index, tbl_data),
-  pagination = FALSE,
+  pagination = TRUE,
+  defaultPageSize = 25,
   searchable = TRUE,
   theme = reactableTheme(
     searchInputStyle = list(
