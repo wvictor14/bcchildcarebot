@@ -1,0 +1,131 @@
+<script>
+// Client-side filter bar: "Updated" window radios, stat bar, active-filter chips, Clear all.
+// Data globals (BC_*) are emitted by dashboard.qmd; crosstalk handles the City/Vacancy inputs.
+(function () {
+  const VACANCY_IDS = [
+    "VACANCY_SRVC_UNDER36",
+    "VACANCY_SRVC_30MOS_5YRS",
+    "VACANCY_SRVC_LICPRE",
+    "VACANCY_SRVC_OOS_GR1_AGE12"
+  ];
+  const CITY_ID = "CITY";
+  const RADIO_SELECTOR = 'input[name="updated_within"]';
+
+  function radios() {
+    return Array.from(document.querySelectorAll(RADIO_SELECTOR));
+  }
+
+  function widestWindow() {
+    return radios().reduce((a, b) => (Number(b.value) > Number(a.value) ? b : a));
+  }
+
+  function citySelectize() {
+    const el = document.querySelector("#" + CITY_ID + " select");
+    return el && el.selectize;
+  }
+
+  function checkedVacancyBoxes() {
+    return VACANCY_IDS.flatMap((id) =>
+      Array.from(document.querySelectorAll("#" + id + " input[type=checkbox]:checked"))
+    );
+  }
+
+  function uncheck(box) {
+    box.checked = false;
+    box.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function selectRadio(radio) {
+    radio.checked = true;
+    radio.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function init() {
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => new bootstrap.Popover(el));
+    const keyIndex = new Map(BC_DATE_KEYS.map((k, i) => [String(k), i]));
+    const dateFilter = new crosstalk.FilterHandle(BC_CT_GROUP);
+
+    function applyWindow(radio) {
+      const maxOffset = Number(radio.value);
+      radios().forEach((r) => r.parentElement.classList.toggle("active", r === radio));
+      dateFilter.set(
+        BC_DATE_KEYS.filter((_, i) => BC_DATE_OFFSETS[i] < maxOffset).map(String)
+      );
+    }
+
+    function updateStats(keys) {
+      const idx = keys === null ? BC_DATE_KEYS.map((_, i) => i) :
+        keys.map((k) => keyIndex.get(String(k))).filter((i) => i !== undefined);
+      const total = idx.length;
+      const withVacancy = idx.reduce((n, i) => n + BC_STAT_ANY[i], 0);
+      const rate = total > 0 ? Math.round((1000 * withVacancy) / total) / 10 : 0;
+      document.getElementById("bc-stat-showing").textContent = total;
+      document.getElementById("bc-stat-any").textContent = withVacancy;
+      document.getElementById("bc-stat-rate").textContent = rate + "%";
+    }
+
+    function chip(text, onRemove) {
+      const span = document.createElement("span");
+      span.className = "bc-chip-term";
+      span.textContent = text;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.setAttribute("aria-label", "Remove filter " + text);
+      btn.textContent = "✕";
+      btn.addEventListener("click", onRemove);
+      span.appendChild(btn);
+      return span;
+    }
+
+    function activeTerms() {
+      const terms = [];
+      const current = radios().find((r) => r.checked);
+      if (current && current !== widestWindow()) {
+        terms.push({
+          text: "Vacancy updated within " + current.parentElement.textContent.trim(),
+          remove: () => selectRadio(widestWindow())
+        });
+      }
+      const sel = citySelectize();
+      if (sel) {
+        sel.items.forEach((city) => terms.push({ text: city, remove: () => sel.removeItem(city) }));
+      }
+      checkedVacancyBoxes().forEach((box) =>
+        terms.push({ text: "Vacancy: " + box.value, remove: () => uncheck(box) }));
+      return terms;
+    }
+
+    function renderChips() {
+      const terms = activeTerms();
+      document.querySelectorAll("[data-chips]").forEach((container) => {
+        container.replaceChildren();
+        terms.forEach((t, i) => {
+          if (i > 0) container.appendChild(document.createTextNode(" \u00b7 "));
+          container.appendChild(chip(t.text, t.remove));
+        });
+      });
+    }
+
+    radios().forEach((r) => r.addEventListener("change", () => {
+      if (r.checked) applyWindow(r);
+    }));
+
+    crosstalk.group(BC_CT_GROUP).var("filter").on("change", (e) => {
+      updateStats(e.value);
+      renderChips();
+    });
+
+    window.bcClearAll = function () {
+      selectRadio(widestWindow());
+      const sel = citySelectize();
+      if (sel) sel.clear();
+      checkedVacancyBoxes().forEach(uncheck);
+    };
+
+    const initial = radios().find((r) => r.checked) || widestWindow();
+    applyWindow(initial);
+  }
+
+  window.addEventListener("load", init);
+})();
+</script>

@@ -2,5 +2,6 @@
 .Rproj.user
 *.Rproj
 *.html
+!scripts-after-body.html
 .Rhistory
 dashboard_files/*

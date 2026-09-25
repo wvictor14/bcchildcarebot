@@ -62,6 +62,19 @@ bccc <- readr::read_csv(
 )
 .today <- lubridate::today(tzone = 'Canada/Pacific')
 
+# When BC last re-published the CSV (CKAN metadata); NA if the API is unreachable
+bc_resource_api <- 'https://catalogue.data.gov.bc.ca/api/3/action/resource_show?id=9a9f14e1-03ea-4a11-936a-6e77b15eeb39'
+bc_published <- tryCatch(
+  jsonlite::fromJSON(bc_resource_api)$result$last_modified |>
+    lubridate::ymd_hms(tz = "UTC") |>
+    lubridate::with_tz("Canada/Pacific") |>
+    as.Date(),
+  error = function(e) {
+    warning("Could not read BC dataset publish date: ", conditionMessage(e))
+    as.Date(NA)
+  }
+)
+
 if (file.exists("data/vacancy_history.csv")) {
   history <- readr::read_csv(
     "data/vacancy_history.csv",
@@ -86,13 +99,33 @@ if (file.exists("data/vacancy_history.csv")) {
 ```{r setup_tbl_data}
 #| include: false
 dataset_last_update <- max(bccc$VACANCY_LAST_UPDATE, na.rm = TRUE)
+updated_windows <- c("1d" = 1L, "3d" = 3L, "7d" = 7L, "2w" = 14L)
+default_window <- 7L
+stale_days <- 14L
+data_age_days <- as.integer(.today - dataset_last_update)
+
+# Tap/focus popover. <span tabindex>: Safari won't focus a clicked <button>, and
+# Quarto adds href="" to every <a>, which reloads the page on click.
+info_icon <- function(text) {
+  htmltools::tags$span(
+    tabindex = "0",
+    role = "button",
+    class = "bc-info",
+    `data-bs-toggle` = "popover",
+    `data-bs-trigger` = "focus",
+    `data-bs-placement` = "bottom",
+    `data-bs-content` = text,
+    `aria-label` = "More info",
+    htmltools::tags$i(class = "bi bi-info-circle")
+  )
+}
 
 if (isTRUE(params$fast_render)) {
   bccc <- bccc |> dplyr::filter(VACANCY_LAST_UPDATE >= dataset_last_update - 3)
 }
 
 tbl_data <- bccc |>
-  filter(VACANCY_LAST_UPDATE >= dataset_last_update - 1 - 3) |>
+  filter(VACANCY_LAST_UPDATE > dataset_last_update - max(updated_windows)) |>
   select(
     SERVICE_TYPE_CD:CITY,
     PHONE:EMAIL,
@@ -225,12 +258,32 @@ stat_gr1_json <- jsonlite::toJSON(stat_gr1, auto_unbox = FALSE)
 
 ```{r}
 #| padding: 0px
+#| expandable: false
 htmltools::div(
   class = "bc-ui-wrapper",
   htmltools::div(
     class = "bc-ui-meta",
-    "Data: ",
+    "Latest vacancy report: ",
     format(dataset_last_update, "%Y-%m-%d"),
+    " ",
+    info_icon(paste(
+      "The most recent date any facility updated its vacancy status.",
+      "BC re-publishes the file daily, but a facility's vacancy info only",
+      "changes when the provider updates it.",
+      "Page: the date this page was built."
+    )),
+    if (!is.na(bc_published)) {
+      htmltools::tagList(
+        " · BC file published: ",
+        format(bc_published, "%Y-%m-%d"),
+        " ",
+        info_icon(paste(
+          "When BC last re-published the dataset file. This happens daily",
+          "even if no facility has updated its vacancies, so a recent date",
+          "here does not mean the vacancy info is recent."
+        ))
+      )
+    },
     " · Page: ",
     format(.today, "%Y-%m-%d"),
     " · Pulled daily from BC Childcare Map. ",
@@ -239,7 +292,19 @@ htmltools::div(
       "Source",
       .noWS = "outside"
     ),
-    ". Verify info before relying."
+    ". Verify info before relying.",
+    if (data_age_days > stale_days) {
+      htmltools::span(
+        class = "bc-stale-warning",
+        paste0(
+          " No facility has updated its vacancy status in ",
+          data_age_days,
+          " days (since ",
+          format(dataset_last_update, "%Y-%m-%d"),
+          "), so vacancies shown may be out of date."
+        )
+      )
+    }
   ),
   htmltools::div(
     class = "bc-stat-bar",
@@ -247,53 +312,52 @@ htmltools::div(
     " facilities · ",
     htmltools::tags$strong(id = "bc-stat-any", as.character(stat_any_n)),
     " with vacancies · ",
-    htmltools::tags$strong(id = "bc-stat-rate", paste0(stat_rate, "%"))
+    htmltools::tags$strong(id = "bc-stat-rate", paste0(stat_rate, "%")),
+    " ",
+    info_icon(paste(
+      "Counts follow the active filters.",
+      "'With vacancies' means at least one age group is flagged as having",
+      "a vacancy."
+    ))
   ),
   htmltools::div(
     class = "bc-filter-bar",
     htmltools::div(
       class = "bc-filter-group-inline",
-      htmltools::span(class = "bc-filter-label", "Updated"),
+      htmltools::span(class = "bc-filter-label", "Vacancy updated within"),
       htmltools::div(
         class = "bc-filter-radios",
-        htmltools::tags$label(
-          class = "bc-filter-radio active",
-          htmltools::tags$input(
-            type = "radio",
-            name = "updated_within",
-            value = "1"
-          ),
-          "1d"
-        ),
-        htmltools::tags$label(
-          class = "bc-filter-radio",
-          htmltools::tags$input(
-            type = "radio",
-            name = "updated_within",
-            value = "3"
-          ),
-          "3d"
-        ),
-        htmltools::tags$label(
-          class = "bc-filter-radio",
-          htmltools::tags$input(
-            type = "radio",
-            name = "updated_within",
-            value = "7",
-            checked = "checked"
-          ),
-          "7d"
-        ),
-        htmltools::tags$label(
-          class = "bc-filter-radio",
-          htmltools::tags$input(
-            type = "radio",
-            name = "updated_within",
-            value = "14"
-          ),
-          "2w"
-        )
-      )
+        purrr::imap(updated_windows, \(days, lbl) {
+          is_default <- days == default_window
+          htmltools::tags$label(
+            class = paste("bc-filter-radio", if (is_default) "active"),
+            htmltools::tags$input(
+              type = "radio",
+              name = "updated_within",
+              value = days,
+              checked = if (is_default) "checked"
+            ),
+            lbl
+          )
+        }) |>
+          unname()
+      ),
+      htmltools::span(
+        class = "bc-filter-label",
+        paste("of", format(dataset_last_update, "%b %d"))
+      ),
+      info_icon(paste0(
+        "Shows facilities that updated their vacancy status within this many ",
+        "days of the latest vacancy report (",
+        format(dataset_last_update, "%Y-%m-%d"),
+        "), not of today. 1d = updated on ",
+        format(dataset_last_update, "%Y-%m-%d"),
+        "; 7d = ",
+        format(dataset_last_update - 6, "%Y-%m-%d"),
+        " to ",
+        format(dataset_last_update, "%Y-%m-%d"),
+        ". Recently updated listings are more likely to be accurate."
+      ))
     ),
     htmltools::div(
       class = "bc-filter-group-inline",
@@ -303,6 +367,11 @@ htmltools::div(
     htmltools::div(
       class = "bc-filter-group-inline",
       htmltools::span(class = "bc-filter-label", "Vacancy"),
+      info_icon(paste(
+        "Show facilities reporting a vacancy for:",
+        "U36 = under 36 months; 30m–5y = 30 months to 5 years;",
+        "Pre = licensed preschool; Gr1–12 = grade 1 to age 12."
+      )),
       filter_checkbox(
         "VACANCY_SRVC_UNDER36",
         "U36",
